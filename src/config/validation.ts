@@ -23,6 +23,7 @@ export const validationSchema = Joi.object({
     JWT_REFRESH_EXPIRE_TIME: Joi.string(),
     JWT_REFRESH_EXPIRE_TIME_VALUE: Joi.string(),
     JWT_REFRESH_EXPIRE_TIME_TYPE: Joi.string(),
+    ENCRYPTION_KEY: Joi.string().required(),
   },
   smtp: {
     SMTP_NAME: Joi.string(),

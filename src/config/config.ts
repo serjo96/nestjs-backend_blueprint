@@ -28,6 +28,7 @@ export type ConfigType = {
   JWT_REFRESH_EXPIRE_TIME?: string;
   JWT_REFRESH_EXPIRE_TIME_VALUE?: string;
   JWT_REFRESH_EXPIRE_TIME_TYPE?: string;
+  ENCRYPTION_KEY?: string;
 }
 
 let config = {} as ConfigType;

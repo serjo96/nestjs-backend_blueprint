@@ -9,6 +9,7 @@ export const authConfig = {
 	jwt_refresh_expire_time: config.JWT_REFRESH_EXPIRE_TIME || '7d',
 	jwt_refresh_expire_time_value: config.JWT_REFRESH_EXPIRE_TIME_VALUE || '7',
 	jwt_refresh_expire_time_type: config.JWT_REFRESH_EXPIRE_TIME_TYPE || 'd',
+	encryptionKey: config.ENCRYPTION_KEY,
 }
 
 export type AuthConfig = typeof authConfig

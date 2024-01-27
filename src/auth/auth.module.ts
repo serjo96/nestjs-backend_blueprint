@@ -15,6 +15,7 @@ import {ConfigEnum} from "~/config/main-config";
 import {AuthConfig} from "~/config/auth.config";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {Tokens} from "~/auth/entity/tokens.entity";
+import {EncryptionService} from "~/auth/EncryptionService";
 
 @Module({
   imports: [
@@ -37,7 +38,7 @@ import {Tokens} from "~/auth/entity/tokens.entity";
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JWTService, JwtStrategy, JwtStrategy],
-  exports: [AuthService, JwtStrategy, JwtStrategy, JWTService],
+  providers: [AuthService, JWTService, JwtStrategy, JwtStrategy, EncryptionService],
+  exports: [AuthService, JwtStrategy, JwtStrategy, JWTService, EncryptionService],
 })
 export class AuthModule {}
