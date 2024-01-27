@@ -1,5 +1,5 @@
 {
-  "name": "backend_camp-desk",
+  "name": "nestjs-backend_blueprint",
   "version": "0.0.1",
   "description": "",
   "author": "serjo96",
@@ -19,7 +19,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "migration:create": "yarn run typeorm migration:create migrations/MIGRATION_NAME",
-    "migration:generate": "yarn run typeorm migration:generate -d src/ormconfig.ts migrations/init-migration",
+    "migration:generate": "yarn run typeorm migration:generate -d src/ormconfig.ts migrations/MIGRATION_NAME",
     "migration:run": "yarn run typeorm migration:run -d ./src/ormconfig.ts"
   },
   "dependencies": {
