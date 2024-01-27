@@ -13,6 +13,8 @@ import { JwtStrategy } from './passport/jwt.strategy';
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import {ConfigEnum} from "~/config/main-config";
 import {AuthConfig} from "~/config/auth.config";
+import {TypeOrmModule} from "@nestjs/typeorm";
+import {Tokens} from "~/auth/entity/tokens.entity";
 
 @Module({
   imports: [
@@ -23,6 +25,9 @@ import {AuthConfig} from "~/config/auth.config";
       property: 'user',
       session: false,
     }),
+    TypeOrmModule.forFeature([
+      Tokens
+    ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
