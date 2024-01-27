@@ -45,7 +45,6 @@ export class UserEntity extends BaseEntity {
   public roles: RolesEnum;
 
   @Column({
-    nullable: true,
     default: false,
   })
   public confirmed: boolean;
