@@ -5,16 +5,16 @@ import { EditUserDto } from '@user/dto/edit-user.dto';
 import { UserResponseDto } from '@user/dto/user-response.dto';
 import { Request } from 'express';
 
-import { UserEntity } from '@user/users.entity';
+import {RolesEnum, UserEntity} from '@user/users.entity';
 
-import { BadRequestException } from '../common/exceptions/bad-request';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { Roles } from '../common/decorators/roles';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { TransformInterceptor } from '../common/interceptors/TransformInterceptor';
-import { ValidationPipe } from '../common/Pipes/validation.pipe';
 
 import { UsersService } from './users.service';
+import {RolesGuard} from "~/common/guards/roles.guard";
+import {JwtAuthGuard} from "~/common/guards/jwt-auth.guard";
+import {TransformInterceptor} from "~/common/interceptors/TransformInterceptor";
+import {BadRequestException} from "~/common/exceptions/bad-request";
+import {Roles} from "~/common/decorators/roles";
+import {ValidationPipe} from "~/common/Pipes/validation.pipe";
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -24,7 +24,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles('admin')
+  @Roles(RolesEnum.ADMIN)
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
   async getAllUsers(): Promise<UserEntity[]> {
     const data = await this.usersService.findAll({});
@@ -33,7 +33,7 @@ export class UsersController {
   }
 
   @Get('/current')
-  @Roles('user', 'admin')
+  @Roles(RolesEnum.USER, RolesEnum.ADMIN)
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
   async profile(@Req() req: Request): Promise<any> {
     const { user } = req;
@@ -42,7 +42,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles(RolesEnum.ADMIN)
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
   async removeUser(@Param() { id }: { id: string }, @Req() req: Request): Promise<UserEntity> {
@@ -50,7 +50,7 @@ export class UsersController {
     let deletedUser;
     if (user.id === id) {
       throw new BadRequestException({
-        message: 'You can delete yourself',
+        message: "You can't delete yourself",
       });
     }
     try {
@@ -63,10 +63,13 @@ export class UsersController {
   }
 
   @Put(':id')
-  @Roles('admin')
+  @Roles(RolesEnum.ADMIN)
   @UsePipes(new ValidationPipe())
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
-  async changeUser(@Param() { id }: { id: string }, @Body() body: EditUserDto): Promise<{ data: UserEntity }> {
+  async changeUser(
+    @Param() { id }: { id: string },
+    @Body() body: EditUserDto
+  ): Promise<{ data: UserEntity }> {
     let editedUser;
     const updatingUser = await this.usersService.findById(id);
     if (!updatingUser) {
