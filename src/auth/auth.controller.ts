@@ -4,7 +4,7 @@ import { ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { BadRequestException } from '~/common/exceptions/bad-request';
 
 import { EmailService } from '~/email/email.service';
-import { MailService } from "~/email/mail.service";
+import { EmailVerificationService } from "~/email/email-verification.service";
 import { AuthService } from './auth.service';
 
 import { CreateUserDto } from '@user/dto/create-user.dto';
@@ -20,7 +20,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly emailService: EmailService,
-    private readonly mailService: MailService,
+    private readonly mailService: EmailVerificationService,
     private readonly configService: ConfigService,
   ) {}
 

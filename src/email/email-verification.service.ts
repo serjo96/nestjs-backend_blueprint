@@ -15,7 +15,7 @@ import { EmailVerificationEntity } from './email-verification.entity';
 import {ConfigService} from "@nestjs/config";
 
 @Injectable()
-export class MailService {
+export class EmailVerificationService {
   constructor(
     @InjectRepository(EmailVerificationEntity)
     private readonly emailVerificationRepository: Repository<EmailVerificationEntity>,
@@ -94,11 +94,10 @@ export class MailService {
         userFromDb.confirmed = true;
         const savedUser = await userFromDb.save();
         await verifiedEmailAddress.remove();
-        // await this.emailService.sendSuccessRegistrationEmail(verifiedEmailAddress.email);
         return savedUser;
       }
     } else {
-      throw new Error('Email token not valid');
+      throw new BadRequestException('Email token not valid');
     }
   }
 

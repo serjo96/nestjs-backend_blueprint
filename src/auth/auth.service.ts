@@ -5,7 +5,7 @@ import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { UsersService } from '@user/users.service';
 import { EmailService } from '~/email/email.service';
-import { MailService } from "~/email/mail.service";
+import { EmailVerificationService } from "~/email/email-verification.service";
 import { UserClassResponseDto } from './dto/user.dto';
 
 import { JwtPayload } from './passport/jwt.interface';
@@ -23,7 +23,7 @@ export class AuthService {
   constructor(
     private readonly userService: UsersService,
     private readonly jwtService: JWTService,
-    private readonly mailService: MailService,
+    private readonly mailService: EmailVerificationService,
     private readonly emailService: EmailService
   ) {}
 

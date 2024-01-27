@@ -8,7 +8,7 @@ import { join } from 'path';
 import { UsersModule } from '@user/users.module';
 import { AuthModule } from '~/auth/auth.module';
 import { ForgottenPasswordEntity } from '~/auth/forgottenPassword.entity';
-import { MailService } from '~/email/mail.service';
+import { EmailVerificationService } from '~/email/email-verification.service';
 
 import { EmailService } from './email.service';
 import { EmailVerificationEntity } from './email-verification.entity';
@@ -53,7 +53,7 @@ import {ConfigEnum} from "~/config/main-config";
       },
     }),
   ],
-  providers: [EmailService, MailService],
-  exports: [EmailService, MailService, TypeOrmModule],
+  providers: [EmailService, EmailVerificationService],
+  exports: [EmailService, EmailVerificationService, TypeOrmModule],
 })
 export class EmailModule {}
