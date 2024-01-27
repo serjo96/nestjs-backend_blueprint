@@ -97,7 +97,7 @@ export class UsersController {
     }
     try {
       console.log(body);
-      editedUser = await this.usersService.editUser(id, body);
+      editedUser = await this.usersService.updateUser(id, body);
     } catch (error) {
       console.log(error);
       throw new BadRequestException(error);

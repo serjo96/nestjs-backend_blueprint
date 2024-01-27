@@ -57,7 +57,7 @@ export class UsersService {
     return user;
   }
 
-  async editUser(id: string, data: any) {
+  async updateUser(id: string, data: any) {
     const toUpdate = await this.userRepository.findOneBy({ id });
     const updated: any = Object.assign(toUpdate, data);
     try {
@@ -65,6 +65,10 @@ export class UsersService {
     } catch (error) {
       console.log(error);
     }
+  }
+
+  public updateUserFiled(id: string, payload: Partial<UserEntity>) {
+    return this.userRepository.update(id, payload)
   }
 
   async removeUser(id: string) {
