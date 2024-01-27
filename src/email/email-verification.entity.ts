@@ -1,19 +1,18 @@
-import { Column, Entity } from 'typeorm';
+import {Column, Entity, JoinColumn, OneToOne, Relation} from 'typeorm';
 import { BaseEntity } from '~/common/base-entity';
+import {UserEntity} from "@user/users.entity";
 
 @Entity('email-verification')
 export class EmailVerificationEntity extends BaseEntity {
-  @Column({
-    type: 'varchar',
-    nullable: false,
-  })
-  email: string;
-
   @Column()
-  public emailToken: string;
+  public token: string;
 
-  @Column({
-    type: 'timestamptz',
+  @Column({ type: 'timestamp with time zone' })
+  expirationDate: string;
+
+  @OneToOne(() => UserEntity, {
+    onDelete: 'CASCADE'
   })
-  public timestamp: Date;
+  @JoinColumn()
+  user: Relation<UserEntity>;
 }
