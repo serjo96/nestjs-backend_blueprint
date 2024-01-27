@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpException, HttpStatus, Param, Post, Redirect } from '@nestjs/common';
+import {Body, Controller, Get, HttpCode, HttpException, HttpStatus, Param, Post, Redirect, Res} from '@nestjs/common';
 import { ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { BadRequestException } from '~/common/exceptions/bad-request';
@@ -12,6 +12,7 @@ import { LoginByEmail } from './dto/login.dto';
 import { UserWithToken } from './interfaces/user-with-token.interface';
 import {ConfigService} from "@nestjs/config";
 import {ConfigEnum, ProjectConfig} from "~/config/main-config";
+import {Response} from "express";
 
 @ApiTags('auth')
 @Controller('/auth')
@@ -57,7 +58,7 @@ export class AuthController {
   })
   @HttpCode(HttpStatus.OK)
   public async sendEmailForgotPassword(@Param() { email }: { email: string }) {
-    /*const isEmailSent = await this.emailService.sendEmailForgotPassword(email);
+    const isEmailSent = await this.emailService.sendEmailForgotPassword(email);
 
     if (isEmailSent) {
       return {
@@ -66,7 +67,7 @@ export class AuthController {
       };
     } else {
       throw new BadRequestException('Mail not sent');
-    }*/
+    }
   }
 
   @Get('/reset-password/:token')
@@ -97,11 +98,20 @@ export class AuthController {
   @ApiParam({
     name: 'token',
     description: 'Token for confirm registration',
-    type: 'string',
+    type: String,
   })
-  public async confirmRegistration(@Param() { token }: { token: string }) {
+  @ApiResponse({
+    status: HttpStatus.PERMANENT_REDIRECT,
+    description: 'Redirects to frontend app',
+  })
+  public async confirmRegistration(
+    @Param() { token }: { token: string },
+    @Res() response: Response
+  ) {
     const { email } = await this.mailService.verifyEmail(token);
-    // await this.emailService.sendSuccessRegistrationEmail(email);
+    await this.emailService.sendSuccessRegistrationEmail(email);
+    const redirectUrl = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
+    return response.redirect(redirectUrl)
   }
 
   @Get('/resend-verification/:email')
