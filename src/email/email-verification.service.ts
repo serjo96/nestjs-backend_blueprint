@@ -13,6 +13,7 @@ import { GetRepositoryMethodsArgs } from '~/utils/typeUtils/getRepositoryMethods
 
 import { EmailVerificationEntity } from './email-verification.entity';
 import {ConfigService} from "@nestjs/config";
+import dayjs from "dayjs";
 
 @Injectable()
 export class EmailVerificationService {
@@ -83,21 +84,29 @@ export class EmailVerificationService {
     return true;
   }
 
-  public async verifyEmail(token: string): Promise<UserEntity> {
-    const verifiedEmailAddress = await this.findOneBy({ emailToken: token });
+  public async verifyEmail(token: string) {
+    const verificationRecord = await this.emailVerificationRepository.findOne({
+      where: { token },
+      relations: ['user']
+    });
 
-    if (verifiedEmailAddress && verifiedEmailAddress.email) {
-      const userFromDb = await this.usersService.findOne({
-        email: verifiedEmailAddress.email,
-      });
-      if (userFromDb) {
-        userFromDb.confirmed = true;
-        const savedUser = await userFromDb.save();
-        await verifiedEmailAddress.remove();
-        return savedUser;
-      }
+    if (!verificationRecord) {
+      throw new BadRequestException('Email token not found.');
+    }
+
+    const isExpired = dayjs().isAfter(dayjs(verificationRecord.expirationDate));
+    if (isExpired) {
+      // Опционально: можно удалить запись токена из базы данных, если она просрочена
+      await this.emailVerificationRepository.remove(verificationRecord);
+      throw new BadRequestException('Email token is expired.');
+    }
+
+
+    if (verificationRecord.user) {
+      await this.usersService.updateUserFiled(verificationRecord.user.id, { confirmed: true });
+      await this.emailVerificationRepository.remove(verificationRecord); // Удаляем использованный токен
     } else {
-      throw new BadRequestException('Email token not valid');
+      throw new BadRequestException('Associated user not found.');
     }
   }
 
