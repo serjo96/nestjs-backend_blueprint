@@ -1,8 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import {Logger} from "nestjs-pino";
 
 import { AppModule } from './app.module';
 import {mainConfig} from "~/config/main-config";
+import {GlobalExceptionFilter} from "~/common/ExceptionFilter";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -36,6 +38,8 @@ async function bootstrap() {
     });
   }
 
+  app.useLogger(app.get(Logger));
+  app.useGlobalFilters(new GlobalExceptionFilter());
   await app.listen(mainConfig().project.port);
 }
 bootstrap();
