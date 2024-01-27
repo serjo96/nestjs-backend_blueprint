@@ -39,9 +39,8 @@ export class UserEntity extends BaseEntity {
   }
 
   @Column({
-    type: 'enum',
-    enum: RolesEnum,
     default: RolesEnum.USER,
+    type: 'string'
   })
   public roles: RolesEnum;
 
