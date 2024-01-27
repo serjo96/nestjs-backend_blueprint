@@ -1,8 +1,8 @@
 import { UserEntity } from '~/users/users.entity';
 import { Column, Entity, JoinColumn, OneToOne, Relation } from 'typeorm';
+import {UTCDateColumn} from "~/common/decorators/utc-date.decorator";
+import {BaseEntity} from "~/common/base-entity";
 
-import { BaseEntity } from '../common/base-entity';
-import { UTCDateColumn } from '../common/decorators/utc-date.decorator';
 
 @Entity('forgotten-password')
 export class ForgottenPasswordEntity extends BaseEntity {
