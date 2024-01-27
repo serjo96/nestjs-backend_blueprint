@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, Param, Put, Req, UseGuards, UseInterceptors, UsePipes } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Put, Req, UseGuards, UseInterceptors, UsePipes, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { EditUserDto } from '@user/dto/edit-user.dto';
 import { UserResponseDto } from '@user/dto/user-response.dto';
 import { Request } from 'express';
@@ -24,12 +24,18 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @ApiOperation({
+    operationId: 'Receive all users',
+    summary: 'Receive all users of app',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns all users',
+  })
   @Roles(RolesEnum.ADMIN)
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
-  async getAllUsers(): Promise<UserEntity[]> {
-    const data = await this.usersService.findAll({});
-    console.log(data);
-    return data;
+  getAllUsers(): Promise<UserEntity[]> {
+    return this.usersService.findAll({});;
   }
 
   @Get('/current')
@@ -63,10 +69,22 @@ export class UsersController {
   }
 
   @Put(':id')
+  @ApiOperation({
+    operationId: 'Edit user by id',
+    summary: 'Receive id of user with payload and edit him.',
+    description: 'Receive id of user with payload for edit, check exist user if not return exception, if ok find user by id and edit him.'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Return edited user',
+  })
+  @ApiBody({
+    type: EditUserDto,
+  })
   @Roles(RolesEnum.ADMIN)
   @UsePipes(new ValidationPipe())
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
-  async changeUser(
+  async editUser(
     @Param() { id }: { id: string },
     @Body() body: EditUserDto
   ): Promise<{ data: UserEntity }> {
