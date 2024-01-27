@@ -1,0 +1,74 @@
+#name: Deploy production
+#
+#env:
+#  REGISTRY: ghcr.io
+#  IMAGE_NAME: ${{ github.repository }}
+#
+#on:
+#  push:
+#    branches:
+#      - production
+#    paths:
+#      - '**'
+#      - 'src/**'
+#      - 'Dockerfile'
+#      - '.github/workflows/**'
+#
+#jobs:
+#  build:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: checkout repo
+#        uses: actions/checkout@v3
+#
+#      - name: Log in to the Container registry
+#        uses: docker/login-action@v2
+#        with:
+#          registry: ${{ env.REGISTRY }}
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Extract metadata (tags, labels) for Docker
+#        id: meta
+#        uses: docker/metadata-action@v4
+#        with:
+#          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+#
+#      - name: Build and push Docker image
+#        uses: docker/build-push-action@v4
+#        with:
+#          context: .
+#          push: true
+#          build-args: |
+#            NODE_ENV=production
+#          tags: |
+#            ${{ steps.meta.outputs.tags }}
+#            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+#          labels: ${{ steps.meta.outputs.labels }}
+#
+#  deploy:
+#    needs: build
+#    runs-on: self-hosted
+#    steps:
+#      - name: Checkout deploy repo
+#        uses: actions/checkout@v3
+#        with:
+#          repository: cue-cue/deploy
+#          token: ${{ secrets.LUVS_GH_PAT }}
+#          path: deploy
+#
+#      - name: Login to GitHub Container Registry
+#        uses: docker/login-action@v2
+#        with:
+#          registry: ghcr.io
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.LUVS_GH_PAT }}
+#
+#      - uses: ./deploy/.github/actions/ansible
+#        with:
+#          path: ./deploy/backend_core/production
+#          playbook: deploy.yml
+#          inventory: inventory.yml
+#          commit_sha: ${{ github.sha }}
+#          vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+#          ssh_private_key: ${{ secrets.SSH_HETZNER_KEY }}

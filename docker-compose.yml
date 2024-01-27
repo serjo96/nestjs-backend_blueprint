@@ -1,0 +1,45 @@
+version: '3.5'
+
+services:
+  postgres:
+    container_name: postgres_container
+    image: postgres
+    env_file: .env.development
+    environment:
+      PGDATA: /data/postgres
+
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - "postgres:/data/postgres"
+      - "./init-postgres.sh:/docker-entrypoint-initdb.d/init-data.sh"
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  pgAdmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    env_file: .env.development
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    restart: unless-stopped
+
+  mailhog:
+    image: mailhog/mailhog
+    logging:
+      driver: 'none'  # disable saving logs
+    ports:
+      - 1025:1025 # smtp server
+      - 8025:8025 # web ui
+
+
+volumes:
+  postgres:
+  pgadmin:
