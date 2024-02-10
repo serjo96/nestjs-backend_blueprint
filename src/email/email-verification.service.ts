@@ -1,19 +1,20 @@
 import { BadRequestException, Inject, Injectable, forwardRef } from "@nestjs/common";
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import {ConfigService} from "@nestjs/config";
+import dayjs from "dayjs";
 
-import { UserEntity } from '@user/users.entity';
 import { UsersService } from '@user/users.service';
 
-import { ForgottenPasswordEntity } from '~/auth/forgottenPassword.entity';
 import { JWTService } from '~/auth/jwt.service';
 import { EmailService } from '~/email/email.service';
 import { isElapsedTime } from '~/utils/isElapsedTime';
 import { GetRepositoryMethodsArgs } from '~/utils/typeUtils/getRepositoryMethodsArgs';
 
 import { EmailVerificationEntity } from './email-verification.entity';
-import {ConfigService} from "@nestjs/config";
-import dayjs from "dayjs";
+import {ForgottenPasswordEntity} from "~/auth/entity/forgotten-password.entity";
+import {DatabaseError} from "~/common/exceptions/DatabaseError";
+import {EncryptionService} from "~/auth/EncryptionService";
 
 @Injectable()
 export class EmailVerificationService {
@@ -29,6 +30,7 @@ export class EmailVerificationService {
 
     @Inject(forwardRef(() => EmailService))
     private emailService: EmailService,
+    private encryptionService: EncryptionService,
   ) {}
 
   public findOneBy(where: GetRepositoryMethodsArgs<EmailVerificationEntity, 'where'>[0]): Promise<EmailVerificationEntity | null> {
@@ -53,41 +55,40 @@ export class EmailVerificationService {
   }
 
   public saveEmailVerification(data: Partial<EmailVerificationEntity>): Promise<EmailVerificationEntity | undefined> {
-    let entity = data;
-    if (!(entity instanceof EmailVerificationEntity)) {
-      entity = EmailVerificationEntity.create(data as EmailVerificationEntity);
-    }
+    let entity = EmailVerificationEntity.create(data as EmailVerificationEntity);
 
-    return this.emailVerificationRepository.save(entity);
+    return this.emailVerificationRepository.save(entity).catch(err => {
+      throw new DatabaseError(err.message);
+    });
   }
 
   public async createEmailToken(email: string): Promise<boolean> {
     const emailVerification = await this.findOneBy({ email });
-    const elapsedTime = emailVerification && isElapsedTime(emailVerification.timestamp);
+    const elapsedTime = emailVerification && isElapsedTime(emailVerification.expirationDate);
 
     if (emailVerification && elapsedTime) {
       // TODO: Add exception with returned timestamp
       throw new BadRequestException('Email sent recently');
     } else {
       const emailToken = this.jwtService.createToken();
+      const hashToken = this.encryptionService.encrypt(emailToken);
+      const expirationDate = dayjs().add(1, 'day').toDate();
 
-      try {
-        await this.saveEmailVerification({
-          email,
-          emailToken,
-          timestamp: new Date(),
-        });
-      } catch (error) {
-        console.error(error);
-      }
+      await this.saveEmailVerification({
+        token: hashToken,
+        expirationDate,
+      });
     }
     return true;
   }
 
   public async verifyEmail(token: string) {
+    const hashToken = this.encryptionService.encrypt(token);
     const verificationRecord = await this.emailVerificationRepository.findOne({
-      where: { token },
+      where: { token: hashToken },
       relations: ['user']
+    }).catch(err => {
+      throw new DatabaseError(err.message);
     });
 
     if (!verificationRecord) {
@@ -96,18 +97,22 @@ export class EmailVerificationService {
 
     const isExpired = dayjs().isAfter(dayjs(verificationRecord.expirationDate));
     if (isExpired) {
-      // Опционально: можно удалить запись токена из базы данных, если она просрочена
-      await this.emailVerificationRepository.remove(verificationRecord);
+      // Optional: it is possible to remove a token entry from the database if it has expired
+      await this.emailVerificationRepository.remove(verificationRecord).catch(err => {
+        throw new DatabaseError(err.message);
+      });
       throw new BadRequestException('Email token is expired.');
     }
 
 
     if (verificationRecord.user) {
       await this.usersService.updateUserFiled(verificationRecord.user.id, { confirmed: true });
-      await this.emailVerificationRepository.remove(verificationRecord); // Удаляем использованный токен
+      // Remove used user token
+      await this.emailVerificationRepository.remove(verificationRecord);
     } else {
       throw new BadRequestException('Associated user not found.');
     }
+    return verificationRecord.user.email
   }
 
   public saveForgottenPasswordToken(data: { id?: string; token: string; timestamp: Date }) {

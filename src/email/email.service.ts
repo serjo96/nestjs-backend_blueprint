@@ -63,9 +63,9 @@ export class EmailService {
         },
       });
 
-      if (emailCode && emailCode.emailToken) {
+      if (emailCode && emailCode.token) {
         const context = {
-          emailToken: emailCode.emailToken,
+          emailToken: emailCode.token,
           baseURl: this.configService.get<string>('frontendHost'),
           email: email,
         };

@@ -1,9 +1,9 @@
 import * as bcrypt from 'bcryptjs';
 import { BeforeInsert, BeforeUpdate, Column, Entity, OneToOne } from 'typeorm';
-import { ForgottenPasswordEntity } from '~/auth/forgottenPassword.entity';
 
 import { BaseEntity } from '~/common/base-entity';
 import { Profile } from './profiles.entity';
+import {ForgottenPasswordEntity} from "~/auth/entity/forgotten-password.entity";
 
 export enum RolesEnum {
   GUEST = 'guest',

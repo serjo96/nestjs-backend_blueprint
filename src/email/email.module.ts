@@ -7,10 +7,10 @@ import { join } from 'path';
 
 import { UsersModule } from '@user/users.module';
 import { AuthModule } from '~/auth/auth.module';
-import { ForgottenPasswordEntity } from '~/auth/forgottenPassword.entity';
 import { EmailVerificationService } from '~/email/email-verification.service';
 
 import { EmailService } from './email.service';
+import {ForgottenPasswordEntity} from "~/auth/entity/forgotten-password.entity";
 import { EmailVerificationEntity } from './email-verification.entity';
 import {SmtpConfig} from "~/config/smtp.config";
 import {ConfigEnum} from "~/config/main-config";

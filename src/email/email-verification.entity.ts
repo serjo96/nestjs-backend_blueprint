@@ -8,7 +8,7 @@ export class EmailVerificationEntity extends BaseEntity {
   public token: string;
 
   @Column({ type: 'timestamp with time zone' })
-  expirationDate: string;
+  expirationDate: Date;
 
   @OneToOne(() => UserEntity, {
     onDelete: 'CASCADE'
