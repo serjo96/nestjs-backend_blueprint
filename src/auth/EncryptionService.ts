@@ -1,8 +1,10 @@
-import { randomBytes, createCipheriv, createDecipheriv } from 'crypto';
+import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypto';
 import {ConfigService} from "@nestjs/config";
 import {ConfigEnum} from "~/config/main-config";
 import {AuthConfig} from "~/config/auth.config";
+import {Injectable} from "@nestjs/common";
 
+@Injectable()
 export class EncryptionService {
   private encryptionKey: Buffer; // Ключ должен быть длиной 32 байта для AES-256
   private ivLength = 16; // Длина IV для AES-256-CBC составляет 16 байт
@@ -30,5 +32,9 @@ export class EncryptionService {
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
+  }
+
+  public createHash(text: string) {
+    return createHash('sha256').update(text).digest('hex');
   }
 }

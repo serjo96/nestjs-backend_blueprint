@@ -1,5 +1,5 @@
 export class DatabaseError extends Error {
-	payload = null;
+	payload: unknown = null;
 	constructor(message: string, payload?: any) {
 		super(message);
 		this.name = 'DatabaseError';
