@@ -5,6 +5,8 @@ import {Logger} from "nestjs-pino";
 import { AppModule } from './app.module';
 import {mainConfig} from "~/config/main-config";
 import {GlobalExceptionFilter} from "~/common/ExceptionFilter";
+import {ValidationPipe} from "@nestjs/common";
+import {formatErrors} from "~/common/custom-validations";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -40,6 +42,9 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger));
   app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalPipes(new ValidationPipe({
+    exceptionFactory: formatErrors,
+  }));
   await app.listen(mainConfig().project.port);
 }
 bootstrap();
