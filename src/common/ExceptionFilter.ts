@@ -1,11 +1,9 @@
 import {Catch, ExceptionFilter, ArgumentsHost, HttpException, HttpStatus, Logger} from '@nestjs/common';
 import {Request, Response} from "express";
-import * as Sentry from "@sentry/node";
 import {TypeORMError} from "typeorm";
 
-import {isProd, isStage} from "~/utils/envType";
+import {isStage} from "~/utils/envType";
 import {CustomServerException} from "~/common/exceptions/CustomServerException";
-import {MicroserviceError} from "~/common/exceptions/MicroserviceError";
 import {DatabaseError} from "~/common/exceptions/DatabaseError";
 
 type ResponseData = {
@@ -32,13 +30,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 			logger.log(exception.message, {
 				payload: (exception as DatabaseError).payload
 			})
-      isProd && Sentry.captureException(exception)
-		} else if (exception instanceof MicroserviceError) {
-			logger.error(exception, exception.stack, exception.name)
-			logger.log(exception.message, {
-				payload: exception.payload
-			})
-		} else if(exception instanceof CustomServerException ) {
+    } else if(exception instanceof CustomServerException ) {
 			responseData.statusCode = 500;
 			responseData.message = exception.message;
 		} else if (exception.getStatus && exception.getStatus() !== 500 || exception instanceof HttpException) {
@@ -51,7 +43,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 			responseData.stackTrace = exception.trace
 		}
 
-		(isProd || isStage) && Sentry.captureException(exception)
+    // Here may to capture  error to error handle service
 
 		logger.error(exception, exception.stack, {
 			payload: request.body || request.query
