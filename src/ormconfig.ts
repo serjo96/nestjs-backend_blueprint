@@ -13,12 +13,11 @@ enum filesType {
 }
 
 type ConfigType = {
-  POSTGRES_HOST?: string;
-  DATABASE_URL?: string;
-  POSTGRES_PORT?: string;
-  POSTGRES_USER?: string;
-  POSTGRES_PASSWORD?: string;
-  POSTGRES_DB?: string;
+  DB_HOST?: string;
+  DB_PORT?: string;
+  DB_USER?: string;
+  DB_PASSWORD?: string;
+  DB_DATABASE?: string;
 };
 
 let config = {} as ConfigType;
@@ -28,8 +27,6 @@ const configFile = `${process.env.NODE_ENV || 'development'}.env`;
 const envFileExists = existsSync(configFile);
 if (envFileExists) {
   config = dotenv.parse(readFileSync(configFile));
-} else {
-  config = { DATABASE_URL: process.env.DATABASE_URL || '' };
 }
 config = { ...config, ...process.env };
 

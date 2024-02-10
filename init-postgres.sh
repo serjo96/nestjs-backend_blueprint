@@ -5,7 +5,7 @@ chmod +x /docker-entrypoint-initdb.d/init-data.sh
 
 INIT_DB_SQL="/docker-entrypoint-initdb.d/init-db.sql"
 
-if [ -n "${POSTGRES_USER}" ] && [ -n "${POSTGRES_DB}" ]; then
+if [ -n "${DB_USER}" ] && [ -n "${DB_DATABASE}" ]; then
 
   until pg_isready --quiet; do
     echo "Waiting PostgreSQL running..."
@@ -13,21 +13,21 @@ if [ -n "${POSTGRES_USER}" ] && [ -n "${POSTGRES_DB}" ]; then
   done
 
   # Check existing db
-  if [ -z "$(psql -qtAX --dbname="${POSTGRES_DB}" -c "SELECT datname FROM pg_database WHERE datname='${POSTGRES_DB}'")" ]; then
-    echo "Creating database: ${POSTGRES_DB}"
-    createdb -E UTF8 "${POSTGRES_DB}"
+  if [ -z "$(psql -qtAX --dbname="${DB_DATABASE}" -c "SELECT datname FROM pg_database WHERE datname='${DB_DATABASE}'")" ]; then
+    echo "Creating database: ${DB_DATABASE}"
+    createdb -E UTF8 "${DB_DATABASE}"
   fi
 
   # Check existing user
-  if [ -z "$(psql -qtAX --dbname=postgres -c "SELECT usename FROM pg_user WHERE usename='$POSTGRES_USER'")" ]; then
-    echo "Creating user: '$POSTGRES_USER'"
-    createuser --createdb --login --password "$POSTGRES_USER"
+  if [ -z "$(psql -qtAX --dbname=postgres -c "SELECT usename FROM pg_user WHERE usename='$DB_USER'")" ]; then
+    echo "Creating user: '$DB_USER'"
+    createuser --createdb --login --password "$DB_USER"
   fi
 
   # Init db scripts if its exist
   if [ -f "$INIT_DB_SQL" ]; then
     echo "Initializing database"
-    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "POSTGRES_DB" < "$INIT_DB_SQL"
+    psql -v ON_ERROR_STOP=1 --username "$DB_USER" --dbname "DB_DATABASE" < "$INIT_DB_SQL"
   fi
 else
         echo "SETUP INFO: No Environment variables given!"
