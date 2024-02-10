@@ -40,7 +40,7 @@ export class UserEntity extends BaseEntity {
 
   @Column({
     default: RolesEnum.USER,
-    type: 'string'
+    type: 'varchar'
   })
   public roles: RolesEnum;
 
