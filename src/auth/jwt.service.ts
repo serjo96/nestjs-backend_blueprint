@@ -6,6 +6,7 @@ import { IJwtPayload } from './passport/jwt.interface';
 import {ConfigService} from "@nestjs/config";
 import {AuthConfig} from "~/config/auth.config";
 import dayjs, {ManipulateType} from "dayjs";
+import {ConfigEnum} from "~/config/main-config";
 
 @Injectable()
 export class JWTService {
@@ -14,7 +15,7 @@ export class JWTService {
     private readonly jwtService: JwtService
   ) {}
 
-  private get autToken() {
+  private get autConfig() {
     const {
       jwt_secret_key: accessSecret,
       jwt_expire_time: accessExpiresIn,
@@ -24,7 +25,7 @@ export class JWTService {
       jwt_refresh_expire_time: refreshExpiresIn,
       jwt_refresh_expire_time_value: expireRefreshValue,
       jwt_refresh_expire_time_type: expireRefreshUnit,
-    } = this.configService.get<AuthConfig>('auth')
+    } = this.configService.get<AuthConfig>(ConfigEnum.AUTH)
     return {
       accessSecret,
       accessExpiresIn,
@@ -38,7 +39,7 @@ export class JWTService {
   }
 
   generateToken({ email, roles, id }: UserResponseDto) {
-    const {expireUnit, expireRefreshUnit, accessSecret, accessExpiresIn, expireValue, expireRefreshValue, refreshSecret} = this.autToken
+    const {expireUnit, expireRefreshUnit, accessSecret, accessExpiresIn, expireValue, expireRefreshValue, refreshSecret} = this.autConfig
     const user: IJwtPayload = { email, roles, id };
 
     const accessToken: string = this.jwtService.sign(
@@ -53,7 +54,7 @@ export class JWTService {
       { user },
       {
         secret: refreshSecret,
-        expiresIn: this.autToken.accessExpiresIn,
+        expiresIn: this.autConfig.accessExpiresIn,
       },
     )
 
@@ -74,13 +75,13 @@ export class JWTService {
 
   verifyToken(token: string) {
     return this.jwtService.verify(token, {
-      secret: this.autToken.accessSecret,
+      secret: this.autConfig.accessSecret,
     });
   }
 
   async refreshToken(refreshToken: string) {
     const decodeToken = this.jwtService.verify(refreshToken, {
-      secret: this.configService.get<string>('auth.jwt_refresh_secret_key'),
+      secret: this.autConfig.refreshSecret,
     })
 
     if (decodeToken.user) {
