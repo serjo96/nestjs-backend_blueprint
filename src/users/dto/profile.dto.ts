@@ -1,31 +1,30 @@
-import { IsBoolean, IsEmail, IsOptional, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import {IsString, IsOptional, IsUrl, IsDate} from 'class-validator';
 
-export class ProfileQuery {
-  @IsOptional()
-  includes: string[];
-}
-
-export class Profile {
-  @IsOptional()
-  @IsString({
-    message: 'Необходимо указать имя',
+export class ProfileDto {
+  @ApiProperty({
+    type: String,
+    description: 'User name',
+    required: false
   })
+  @IsString()
+  @IsOptional()
   name?: string;
 
+  @ApiProperty({
+    type: Date,
+    description: 'User birthday',
+    required: false
+  })
+  @IsDate()
   @IsOptional()
-  @IsEmail(
-    {},
-    {
-      message: 'Неправильный формат электронной почты',
-    },
-  )
-  email?: string;
+  birthday: Date;
 
-  @IsOptional()
-  @IsString()
-  birthday?: Date;
-
-  @IsOptional()
-  @IsBoolean()
-  promoEmailsSubscribed?: boolean;
+  @ApiProperty({
+    type: String,
+    description: 'Profile url link',
+    required: false
+  })
+  @IsUrl()
+  photoUrl: string;
 }
