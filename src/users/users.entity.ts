@@ -1,9 +1,10 @@
 import * as bcrypt from 'bcryptjs';
-import { BeforeInsert, BeforeUpdate, Column, Entity, OneToOne } from 'typeorm';
+import {BeforeInsert, BeforeUpdate, Column, Entity, Index, OneToMany, OneToOne} from 'typeorm';
 
-import { BaseEntity } from '~/common/base-entity';
-import { Profile } from './profiles.entity';
+import {BaseEntity} from '~/common/base-entity';
+import {Profile} from './profiles.entity';
 import {ForgottenPasswordEntity} from "~/auth/entity/forgotten-password.entity";
+import {RefreshToken} from "~/auth/entity/refresh-token.entity";
 
 export enum RolesEnum {
   GUEST = 'guest',
@@ -14,27 +15,29 @@ export enum RolesEnum {
 
 @Entity('users')
 export class UserEntity extends BaseEntity {
+
+  @Column({
+    type: 'varchar',
+    nullable: false,
+  })
+  @Index()
+  public email: string;
+
+  @Column({
+    nullable: true,
+  })
+  public nickname?: string;
+
   @Column({
     type: 'varchar',
     nullable: false,
     select: true,
   })
-  password: string;
-
-  @Column({
-    type: 'varchar',
-    nullable: false,
-  })
-  email: string;
-
-  @Column({
-    nullable: true,
-  })
-  public login?: string;
+  public password: string;
 
   @BeforeInsert()
   @BeforeUpdate()
-  async hashPassword() {
+  private async hashPassword() {
     this.password = await bcrypt.hash(this.password, 10);
   }
 
@@ -49,6 +52,12 @@ export class UserEntity extends BaseEntity {
   })
   public confirmed: boolean;
 
+  @Column({
+    type: 'timestamp with time zone',
+    nullable: true
+  })
+ public lastActiveAt: Date;
+
   @OneToOne(() => Profile, (profile) => profile.user, {
     eager: true,
   })
@@ -56,4 +65,7 @@ export class UserEntity extends BaseEntity {
 
   @OneToOne(() => ForgottenPasswordEntity, (ForgottenPassword) => ForgottenPassword.user)
   public forgottenPassword: ForgottenPasswordEntity;
+
+  @OneToMany(() => RefreshToken, refreshToken => refreshToken.user)
+  refreshTokens: RefreshToken[];
 }
