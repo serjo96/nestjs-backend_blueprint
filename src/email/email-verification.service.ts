@@ -34,7 +34,9 @@ export class EmailVerificationService {
   ) {}
 
   public findOneBy(where: GetRepositoryMethodsArgs<EmailVerificationEntity, 'where'>[0]): Promise<EmailVerificationEntity | null> {
-    return this.emailVerificationRepository.findOneBy(where);
+    return this.emailVerificationRepository.findOneBy(where).catch(err => {
+      throw new DatabaseError(err.message);
+    });
   }
 
   public deleteEmailVerification(where: GetRepositoryMethodsArgs<EmailVerificationEntity, 'delete'>[0]) {
@@ -63,7 +65,11 @@ export class EmailVerificationService {
   }
 
   public async createEmailToken(email: string): Promise<boolean> {
-    const emailVerification = await this.findOneBy({ email });
+    const emailVerification = await this.findOneBy({
+      user: {
+        email
+      }
+    });
     const elapsedTime = emailVerification && isElapsedTime(emailVerification.expirationDate);
 
     if (emailVerification && elapsedTime) {
