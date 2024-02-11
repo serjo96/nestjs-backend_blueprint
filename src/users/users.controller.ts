@@ -1,5 +1,4 @@
 import { Body, Controller, Delete, Get, Param, Put, Req, UseGuards, UseInterceptors, UsePipes, HttpStatus } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { EditUserDto } from '@user/dto/edit-user.dto';
 import { UserResponseDto } from '@user/dto/user-response.dto';
@@ -49,7 +48,7 @@ export class UsersController {
 
   @Delete(':id')
   @Roles(RolesEnum.ADMIN)
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
   async removeUser(@Param() { id }: { id: string }, @Req() req: Request): Promise<UserEntity> {
     const { user } = req;
