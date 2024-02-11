@@ -1,8 +1,7 @@
 import { Column, Entity, Index, JoinColumn, OneToOne } from 'typeorm';
 
-import { BaseEntity } from '../common/base-entity';
-
-import { UserEntity } from './users.entity';
+import {UserEntity} from './users.entity';
+import {BaseEntity} from "~/common/base-entity";
 
 @Entity('profiles')
 export class Profile extends BaseEntity {
@@ -11,7 +10,13 @@ export class Profile extends BaseEntity {
   })
   public name: string;
 
-  @OneToOne((type) => UserEntity, (user) => user.profile)
+  @Column({ nullable: true })
+  birthday: Date;
+
+  @Column({ nullable: true })
+  photoUrl: string;
+
+  @OneToOne(() => UserEntity, (user) => user.profile)
   @JoinColumn({ name: 'userId' })
   user: UserEntity;
 
