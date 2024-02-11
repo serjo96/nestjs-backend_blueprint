@@ -1,5 +1,5 @@
 import {Body, Controller, Get, HttpCode, HttpException, HttpStatus, Param, Post, Redirect, Res} from '@nestjs/common';
-import { ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {ApiOkResponse, ApiParam, ApiResponse, ApiTags} from '@nestjs/swagger';
 
 import { BadRequestException } from '~/common/exceptions/bad-request';
 
@@ -24,22 +24,20 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
-  @Post('/register')
+  @Post('/sign-up')
   @HttpCode(HttpStatus.OK)
-  @ApiResponse({
-    status: HttpStatus.OK,
+  @ApiOkResponse({
     description: 'A user has been successfully registration',
     type: UserWithToken,
   })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
   public async register(@Body() createUserDto: CreateUserDto): Promise<UserWithToken> {
-    try {
-      return await this.authService.register(createUserDto);
-    } catch (error) {
-      console.log(error);
-      throw new HttpException(error.message, error.code || HttpStatus.BAD_REQUEST);
-    }
+    const userData = await this.authService.register(createUserDto);
+
+    await this.mailService.createEmailToken(userData.user.email);
+    // await this.emailService.sendEmailVerification(userDto.email);
+    return userData
   }
 
   @Post('/login')
