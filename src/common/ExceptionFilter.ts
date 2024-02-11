@@ -2,7 +2,6 @@ import {Catch, ExceptionFilter, ArgumentsHost, HttpException, HttpStatus, Logger
 import {Request, Response} from "express";
 import {TypeORMError} from "typeorm";
 
-import {isStage} from "~/utils/envType";
 import {CustomServerException} from "~/common/exceptions/CustomServerException";
 import {DatabaseError} from "~/common/exceptions/DatabaseError";
 
@@ -22,7 +21,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 		const response = ctx.getResponse<Response>();
 		const request = ctx.getRequest<Request>();
 		const logger = new Logger(GlobalExceptionFilter.name)
-    const exceptionResp = exception.getResponse()
     const responseData: ResponseData = {
       statusCode:  HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal Server Error'
@@ -37,6 +35,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       responseData.statusCode = 500;
       responseData.message = exception.message;
     } else if (exception.getStatus && exception.getStatus() !== 500 || exception instanceof HttpException) {
+      const exceptionResp = exception.getResponse()
       responseData.statusCode = exception.getStatus();
       responseData.message = exception.message;
 
