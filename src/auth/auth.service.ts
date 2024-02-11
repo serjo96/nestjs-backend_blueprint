@@ -15,6 +15,7 @@ import {RefreshToken} from "~/auth/entity/refresh-token.entity";
 import {UserEntity} from "@user/users.entity";
 import {InjectRepository} from "@nestjs/typeorm";
 import {Repository} from "typeorm";
+import {DatabaseError} from "~/common/exceptions/DatabaseError";
 
 export interface ValidateUserByPasswordPayload {
   email: string;
@@ -45,7 +46,9 @@ export class AuthService {
       user,
       expiresIn
     })
-    return this.refreshTokensRepository.save(tokenPayload)
+    return this.refreshTokensRepository.save(tokenPayload).catch(err => {
+      throw new DatabaseError(err.message);
+    })
   }
 
   private deleteToken(refreshToken: string) {
@@ -81,9 +84,6 @@ export class AuthService {
       roles: user.roles
     });
     await this.saveUserToken({user, expiresIn: token.expireDateRefreshToken, refreshToken: token.refreshToken})
-
-    await this.mailService.createEmailToken(userDto.email);
-    // await this.emailService.sendEmailVerification(userDto.email);
 
     return {
       user: new UserClassResponseDto(user),

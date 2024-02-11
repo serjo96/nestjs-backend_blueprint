@@ -8,6 +8,7 @@ import { BadRequestException } from '../common/exceptions/bad-request';
 import { CreateUserDto } from './dto/create-user.dto';
 
 import { UserEntity } from './users.entity';
+import {DatabaseError} from "~/common/exceptions/DatabaseError";
 
 @Injectable()
 export class UsersService {
@@ -43,6 +44,8 @@ export class UsersService {
 
     const userInDb = await this.userRepository.findOne({
       where: { email },
+    }).catch(err => {
+      throw new DatabaseError(err.message);
     });
 
     if (userInDb) {
@@ -53,7 +56,9 @@ export class UsersService {
       password,
       email,
     });
-    await this.userRepository.save(user);
+    await this.userRepository.save(user).catch(err => {
+      throw new DatabaseError(err.message);
+    });
     return user;
   }
 
