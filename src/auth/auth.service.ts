@@ -8,14 +8,23 @@ import { EmailService } from '~/email/email.service';
 import { EmailVerificationService } from "~/email/email-verification.service";
 import { UserClassResponseDto } from './dto/user.dto';
 
-import { JwtPayload } from './passport/jwt.interface';
 import { JWTService } from './jwt.service';
 import { UserWithToken } from './interfaces/user-with-token.interface';
 import { LoginByEmail } from './dto/login.dto';
+import {RefreshToken} from "~/auth/entity/refresh-token.entity";
+import {UserEntity} from "@user/users.entity";
+import {InjectRepository} from "@nestjs/typeorm";
+import {Repository} from "typeorm";
 
 export interface ValidateUserByPasswordPayload {
   email: string;
   password: string;
+}
+
+type SaveUserToken = {
+  refreshToken: string,
+  user: UserEntity,
+  expiresIn: Date
 }
 
 @Injectable()
@@ -24,8 +33,24 @@ export class AuthService {
     private readonly userService: UsersService,
     private readonly jwtService: JWTService,
     private readonly mailService: EmailVerificationService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokensRepository: Repository<RefreshToken>
   ) {}
+
+  private saveUserToken({refreshToken, user, expiresIn}: SaveUserToken) {
+    const tokenPayload = this.refreshTokensRepository.create({
+      token: refreshToken,
+      user,
+      expiresIn
+    })
+    return this.refreshTokensRepository.save(tokenPayload)
+  }
+
+  private deleteToken(refreshToken: string) {
+    return this.refreshTokensRepository.delete({token: refreshToken})
+  }
 
   async validateUserByPassword({ email, password }: ValidateUserByPasswordPayload) {
     // find if user exist with this email
@@ -43,13 +68,6 @@ export class AuthService {
     return user;
   }
 
-  async validateUser({ email }: JwtPayload): Promise<UserDto> {
-    const user = await this.userService.findByEmail(email);
-    if (!user) {
-      throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
-    }
-    return user;
-  }
 
   async comparePassword(attempt: string, dbPassword: string): Promise<boolean> {
     return await bcrypt.compare(attempt, dbPassword);
@@ -57,7 +75,12 @@ export class AuthService {
 
   async register(userDto: CreateUserDto): Promise<UserWithToken> {
     const user = await this.userService.create(userDto);
-    const token = this.jwtService.generateToken(user);
+    const token = this.jwtService.generateToken({
+      email: user.email,
+      userId: user.id,
+      roles: user.roles
+    });
+    await this.saveUserToken({user, expiresIn: token.expireDateRefreshToken, refreshToken: token.refreshToken})
 
     await this.mailService.createEmailToken(userDto.email);
     // await this.emailService.sendEmailVerification(userDto.email);
@@ -71,7 +94,11 @@ export class AuthService {
   async login(loginUserDto: LoginByEmail): Promise<UserWithToken> {
     const user = await this.validateUserByPassword(loginUserDto);
 
-    const {accessToken, refreshToken} = this.jwtService.generateToken(user);
+    const {accessToken, refreshToken} = this.jwtService.generateToken({
+      email: user.email,
+      userId: user.id,
+      roles: user.roles
+    });
 
     return {
       user: new UserClassResponseDto(user),
@@ -80,5 +107,24 @@ export class AuthService {
         refreshToken
       },
     };
+  }
+
+  async refreshAccessToken(refreshToken: string): Promise<string> {
+    const decodedToken = this.jwtService.verifyToken(refreshToken, false);
+
+    // Проверка наличия токена в базе данных и не истек ли он
+    const tokenEntity = await this.refreshTokensRepository.findOne({
+      where: {
+        token: refreshToken
+      } });
+    if (!tokenEntity || new Date() > tokenEntity.expiresIn) {
+      throw new UnauthorizedException('Refresh token is invalid or expired');
+    }
+
+    // Удаление использованного Refresh токена из базы данных
+    await this.deleteToken(refreshToken);
+
+    // Генерация нового Access токена
+    return this.jwtService.generateToken(decodedToken).accessToken;;
   }
 }
