@@ -53,20 +53,13 @@ export class EmailService {
     }
   }
 
-  public async sendEmailVerification(email: string): Promise<SentMessageInfo> {
+  public async sendEmailVerification(email: string, token: string): Promise<SentMessageInfo> {
     try {
       const {address, name} = this.configService.get<SmtpConfig>(ConfigEnum.SMTP)
-
-      const emailCode = await this.mailService.findOneBy({
-        where: {
-          email,
-        },
-      });
-
-      if (emailCode && emailCode.token) {
-        const context = {
-          emailToken: emailCode.token,
-          baseURl: this.configService.get<string>('frontendHost'),
+      const clientHost = this.configService.get<string>(ConfigEnum.FRONTEND_HOST)
+      const context = {
+          emailToken: token,
+          baseURl: clientHost,
           email: email,
         };
         const mailOptions = {
@@ -78,11 +71,7 @@ export class EmailService {
           template: join(__dirname, 'templates/confirmation'),
           context,
         };
-
         return await this.sendEmail(mailOptions);
-      } else {
-        throw new BadRequestException();
-      }
     } catch (error) {
       console.error(error);
     }
@@ -118,7 +107,7 @@ export class EmailService {
     if (!user) {
       throw new BadRequestException(`User doesn't exist`);
     }
-    const tokenModel = await this.mailService.createForgottenPasswordToken(user.forgottenPassword);
+    const tokenModel = await this.mailService.createForgottenPasswordToken(user);
 
     const context = {
       targetLink: `${this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost}/api/v1/auth/reset-password/${tokenModel.token}`,

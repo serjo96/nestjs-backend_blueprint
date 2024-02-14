@@ -35,8 +35,8 @@ export class AuthController {
   public async register(@Body() createUserDto: CreateUserDto): Promise<UserWithToken> {
     const userData = await this.authService.register(createUserDto);
 
-    await this.mailService.createEmailToken(userData.user.email);
-    // await this.emailService.sendEmailVerification(userDto.email);
+    const emailToken = await this.mailService.createEmailToken(userData.user.email);
+    await this.emailService.sendEmailVerification(userData.user.email, emailToken);
     return userData
   }
 

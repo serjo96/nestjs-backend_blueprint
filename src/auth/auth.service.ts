@@ -86,7 +86,7 @@ export class AuthService {
     await this.saveUserToken({user, expiresIn: token.expireDateRefreshToken, refreshToken: token.refreshToken})
 
     return {
-      user: new UserClassResponseDto(user),
+      user,
       token,
     };
   }
@@ -101,7 +101,7 @@ export class AuthService {
     });
 
     return {
-      user: new UserClassResponseDto(user),
+      user: user,
       token: {
         accessToken,
         refreshToken

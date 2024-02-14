@@ -15,6 +15,9 @@ import { EmailVerificationEntity } from './email-verification.entity';
 import {ForgottenPasswordEntity} from "~/auth/entity/forgotten-password.entity";
 import {DatabaseError} from "~/common/exceptions/DatabaseError";
 import {EncryptionService} from "~/auth/EncryptionService";
+import {FindOptionsRelations} from "typeorm/find-options/FindOptionsRelations";
+import {UserEntity} from "@user/users.entity";
+import {FindOptionsWhere} from "typeorm/find-options/FindOptionsWhere";
 
 @Injectable()
 export class EmailVerificationService {
@@ -33,7 +36,9 @@ export class EmailVerificationService {
     private encryptionService: EncryptionService,
   ) {}
 
-  public findOneBy(where: GetRepositoryMethodsArgs<EmailVerificationEntity, 'where'>[0]): Promise<EmailVerificationEntity | null> {
+  public findOneBy(
+    where: FindOptionsWhere<EmailVerificationEntity>
+  ): Promise<EmailVerificationEntity | null> {
     return this.emailVerificationRepository.findOneBy(where).catch(err => {
       throw new DatabaseError(err.message);
     });
@@ -64,11 +69,12 @@ export class EmailVerificationService {
     });
   }
 
-  public async createEmailToken(email: string): Promise<boolean> {
+  public async createEmailToken(email: string): Promise<string | null> {
+    let emailToken = null;
     const emailVerification = await this.findOneBy({
       user: {
         email
-      }
+      },
     });
     const elapsedTime = emailVerification && isElapsedTime(emailVerification.expirationDate);
 
@@ -76,22 +82,20 @@ export class EmailVerificationService {
       // TODO: Add exception with returned timestamp
       throw new BadRequestException('Email sent recently');
     } else {
-      const emailToken = this.jwtService.createToken();
-      const hashToken = this.encryptionService.encrypt(emailToken);
+      emailToken = this.encryptionService.generateToken(email);
       const expirationDate = dayjs().add(1, 'day').toDate();
 
       await this.saveEmailVerification({
-        token: hashToken,
+        token: emailToken,
         expirationDate,
       });
     }
-    return true;
+    return emailToken;
   }
 
   public async verifyEmail(token: string) {
-    const hashToken = this.encryptionService.encrypt(token);
     const verificationRecord = await this.emailVerificationRepository.findOne({
-      where: { token: hashToken },
+      where: { token },
       relations: ['user']
     }).catch(err => {
       throw new DatabaseError(err.message);
@@ -127,24 +131,28 @@ export class EmailVerificationService {
     return this.forgottenPasswordRepository.save(userForgotPassword);
   }
 
-  public async createForgottenPasswordToken(forgottenPassword?: ForgottenPasswordEntity) {
-    const token = this.jwtService.createToken();
+  public async createForgottenPasswordToken(user: UserEntity) {
+    const token = this.jwtService.generateToken({
+      email: user.email,
+      roles: user.roles,
+      userId: user.id
+    });
     const newTimestamp = new Date();
 
-    if (!forgottenPassword) {
+    if (!user.forgottenPassword) {
       return await this.saveForgottenPasswordToken({
-        token,
+        token: token.accessToken,
         timestamp: newTimestamp,
       });
     }
-    const elapsedTime = isElapsedTime(forgottenPassword.timestamp);
+    const elapsedTime = isElapsedTime(user.forgottenPassword.timestamp);
     if (elapsedTime) {
       // TODO: Add exception with returned timestamp
       throw new Error('Email sent recently');
     } else {
       return await this.saveForgottenPasswordToken({
-        id: forgottenPassword.id,
-        token,
+        id: user.forgottenPassword.id,
+        token: token.accessToken,
         timestamp: newTimestamp,
       });
     }
