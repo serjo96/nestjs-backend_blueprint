@@ -1,12 +1,10 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserDto } from '@user/dto/user.dto';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { UsersService } from '@user/users.service';
 import { EmailService } from '~/email/email.service';
 import { EmailVerificationService } from "~/email/email-verification.service";
-import { UserClassResponseDto } from './dto/user.dto';
 
 import { JWTService } from './jwt.service';
 import { UserWithToken } from './interfaces/user-with-token.interface';

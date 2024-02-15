@@ -11,10 +11,7 @@ export const enum ConfigEnum {
   FRONTEND_HOST = 'frontendHost',
   SENTRY_DSN = 'sentryDsn',
   AUTH = 'auth',
-  RABBIT_MQ_URL = 'rabbitMqUrl',
   DATABASE = 'database',
-  REDIS = 'redis',
-  TINKOFF = 'tinkoff',
   SMTP = 'smtp',
 }
 
