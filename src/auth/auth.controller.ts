@@ -101,8 +101,9 @@ export class AuthController {
     @Res() response: Response
   ) {
     const userEmail = await this.mailService.verifyEmail(token);
-    await this.emailService.sendSuccessRegistrationEmail(userEmail);
     const redirectUrl = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
+
+    await this.emailService.sendSuccessRegistrationEmail(userEmail);
     return response.redirect(redirectUrl)
   }
 
