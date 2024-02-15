@@ -10,6 +10,7 @@ import { UsersService } from '@user/users.service';
 import { EmailVerificationService } from "~/email/email-verification.service";
 import {ConfigEnum, ProjectConfig} from "~/config/main-config";
 import {SmtpConfig} from "~/config/smtp.config";
+import {EmailServiceException} from "~/common/exceptions/email-service-exception";
 
 @Injectable()
 export class EmailService {
@@ -27,11 +28,12 @@ export class EmailService {
       ...mailOptions,
     };
 
-    return await this.mailerService.sendMail(options);
+    return await this.mailerService.sendMail(options).catch(error=> {
+      throw new EmailServiceException(error, options)
+    })
   }
 
   async testSend(email: string) {
-    try {
       const {address, name} = this.configService.get<SmtpConfig>(ConfigEnum.SMTP)
       const context = {
         emailToken: 222,
@@ -48,13 +50,9 @@ export class EmailService {
         context,
       };
       return await this.sendEmail(mailOptions);
-    } catch (error) {
-      console.error(error);
-    }
   }
 
   public async sendEmailVerification(email: string, token: string): Promise<SentMessageInfo> {
-    try {
       const {address, name} = this.configService.get<SmtpConfig>(ConfigEnum.SMTP)
       const clientHost = this.configService.get<string>(ConfigEnum.FRONTEND_HOST)
       const context = {
@@ -72,30 +70,21 @@ export class EmailService {
           context,
         };
         return await this.sendEmail(mailOptions);
-    } catch (error) {
-      console.error(error);
-    }
   }
 
   public async sendSuccessRegistrationEmail(email: string) {
-    try {
-      const {address, name} = this.configService.get<SmtpConfig>(ConfigEnum.SMTP)
-      const context = {
-        clientUrl: this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost,
-      };
-      const mailOptions = {
-        from: address,
-        sender: name,
-        to: email, // list of receivers (separated by ,)
-        subject: 'Success registration',
-        message: 'Congrats with success registration',
-        template: join(__dirname, 'templates/success-registration'),
-        context,
-      };
-      await this.sendEmail(mailOptions);
-    } catch (error) {
-      console.error(error);
-    }
+    const {address, name} = this.configService.get<SmtpConfig>(ConfigEnum.SMTP)
+    const clientUrl = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost;
+    const mailOptions = {
+      from: address,
+      sender: name,
+      to: email,
+      subject: 'Success registration',
+      message: 'Congrats with success registration',
+      template: join(__dirname, 'templates/success-registration'),
+      context: {clientUrl},
+    };
+    await this.sendEmail(mailOptions)
   }
 
   public async sendEmailForgotPassword(email: string): Promise<SentMessageInfo> {
