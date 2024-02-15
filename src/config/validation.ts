@@ -1,5 +1,14 @@
 import * as Joi from '@hapi/joi';
 
+const expireTimeTypes = [
+  'years', 'year', 'yrs', 'yr', 'y',
+  'weeks', 'week', 'w',
+  'days', 'day', 'd',
+  'hours', 'hour', 'hrs', 'hr', 'h',
+  'minutes', 'minute', 'mins', 'min', 'm',
+  'seconds', 'second', 'secs', 'sec', 's',
+  'milliseconds', 'millisecond', 'msecs', 'msec', 'ms'
+];
 export const validationSchema = Joi.object({
   project: {
     NODE_ENV: Joi.string().valid('development', 'production', 'staging', 'docker'),
@@ -16,13 +25,11 @@ export const validationSchema = Joi.object({
   },
   auth: {
     JWT_SECRET_KEY: Joi.string().required(),
-    JWT_EXPIRE_TIME: Joi.string().required(),
-    JWT_EXPIRE_TIME_VALUE: Joi.string(),
-    JWT_EXPIRE_TIME_TYPE: Joi.string(),
+    JWT_EXPIRE_TIME_VALUE: Joi.number(),
+    jwt_expire_time_type: Joi.string().valid(...expireTimeTypes).required(),
     JWT_REFRESH_SECRET_KEY: Joi.string().required(),
-    JWT_REFRESH_EXPIRE_TIME: Joi.string(),
-    JWT_REFRESH_EXPIRE_TIME_VALUE: Joi.string(),
-    JWT_REFRESH_EXPIRE_TIME_TYPE: Joi.string(),
+    JWT_REFRESH_EXPIRE_TIME_VALUE: Joi.number(),
+    jwt_refresh_expire_time_type: Joi.string().valid(...expireTimeTypes).required(),
     ENCRYPTION_KEY: Joi.string().required(),
   },
   smtp: {

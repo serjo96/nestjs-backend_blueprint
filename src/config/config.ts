@@ -1,5 +1,6 @@
 import {existsSync, readFileSync} from "fs";
 import * as dotenv from 'dotenv'
+import {UnionExpireType} from "~/config/auth.config";
 
 export type ConfigType = {
   DB_HOST?: string;
@@ -21,13 +22,11 @@ export type ConfigType = {
   SMTP_HOST?: string;
 
   JWT_SECRET_KEY?: string;
-  JWT_EXPIRE_TIME?: string;
   JWT_EXPIRE_TIME_VALUE?: string;
-  JWT_EXPIRE_TIME_TYPE?: string;
+  JWT_EXPIRE_TIME_TYPE?: UnionExpireType;
   JWT_REFRESH_SECRET_KEY?: string;
-  JWT_REFRESH_EXPIRE_TIME?: string;
   JWT_REFRESH_EXPIRE_TIME_VALUE?: string;
-  JWT_REFRESH_EXPIRE_TIME_TYPE?: string;
+  JWT_REFRESH_EXPIRE_TIME_TYPE?: UnionExpireType;
   ENCRYPTION_KEY?: string;
 }
 
