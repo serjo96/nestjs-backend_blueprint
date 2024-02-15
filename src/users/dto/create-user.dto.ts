@@ -2,12 +2,7 @@ import { IsEmail, IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'cl
 
 export class CreateUserDto {
   @IsNotEmpty()
-  @IsEmail(
-    {},
-    {
-      message: 'Invalid email format',
-    },
-  )
+  @IsEmail()
   email: string;
 
   @IsNotEmpty()
