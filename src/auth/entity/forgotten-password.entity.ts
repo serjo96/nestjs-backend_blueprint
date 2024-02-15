@@ -21,4 +21,21 @@ export class ForgottenPasswordEntity extends BaseEntity {
     nullable: false,
   })
   timestamp: Date;
+
+  @Column({ type: 'timestamp with time zone' })
+  expirationDate: Date;
+
+
+  @Column({
+    type: 'int',
+    default: 0,
+  })
+  attempts: number;
+
+  @Column({
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
+  lastAttemptDate: Date | null;
+
 }

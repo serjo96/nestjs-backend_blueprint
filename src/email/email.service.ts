@@ -66,7 +66,7 @@ export class EmailService {
           from: address,
           sender: name,
           to: email, // list of receivers (separated by ,)
-          subject: 'Confirm you account on Camp desk',
+          subject: 'Confirm you account on <YOUR APP>',
           message: 'Confirm registration',
           template: join(__dirname, 'templates/confirmation'),
           context,
@@ -99,28 +99,26 @@ export class EmailService {
   }
 
   public async sendEmailForgotPassword(email: string): Promise<SentMessageInfo> {
-    const {address, name} = this.configService.get<SmtpConfig>(ConfigEnum.SMTP)
-    const user = await this.usersService.findByEmail(email, {
-      forgottenPassword: true,
-    });
+    const smtpConfig = this.configService.get<SmtpConfig>(ConfigEnum.SMTP);
+    const projectConfig = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT);
+    const user = await this.usersService.findByEmail(email, { forgottenPassword: true });
 
-    if (!user) {
-      throw new BadRequestException(`User doesn't exist`);
+    if (!user || !user.forgottenPassword) {
+      throw new BadRequestException(`User doesn't exist or forgotten password token is missing.`);
     }
-    const tokenModel = await this.mailService.createForgottenPasswordToken(user);
+    const tokenModel = await this.mailService.validateResetPasswordToken(user.forgottenPassword);
+    const targetLink = `${projectConfig.frontendHost}/api/v1/auth/reset-password/${tokenModel.token}`;
 
-    const context = {
-      targetLink: `${this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost}/api/v1/auth/reset-password/${tokenModel.token}`,
-    };
     const mailOptions = {
-      from: address,
-      sender: name,
-      to: email, // list of receivers (separated by ,)
+      from: smtpConfig.address,
+      sender: smtpConfig.name,
+      to: email,
       subject: 'Forgotten password',
       message: 'Forgot password',
       template: join(__dirname, 'templates/forgot-password'),
-      context,
+      context: { targetLink },
     };
+
 
     return this.sendEmail(mailOptions);
   }

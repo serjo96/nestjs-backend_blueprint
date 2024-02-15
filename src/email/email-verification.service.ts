@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, forwardRef } from "@nestjs/common";
+import {BadRequestException, Inject, Injectable, forwardRef, NotFoundException} from "@nestjs/common";
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {ConfigService} from "@nestjs/config";
@@ -15,7 +15,6 @@ import { EmailVerificationEntity } from './email-verification.entity';
 import {ForgottenPasswordEntity} from "~/auth/entity/forgotten-password.entity";
 import {DatabaseError} from "~/common/exceptions/DatabaseError";
 import {EncryptionService} from "~/auth/EncryptionService";
-import {FindOptionsRelations} from "typeorm/find-options/FindOptionsRelations";
 import {UserEntity} from "@user/users.entity";
 import {FindOptionsWhere} from "typeorm/find-options/FindOptionsWhere";
 
@@ -125,36 +124,59 @@ export class EmailVerificationService {
     return verificationRecord.user.email
   }
 
-  public saveForgottenPasswordToken(data: { id?: string; token: string; timestamp: Date }) {
+  public saveForgottenPasswordToken(data: Partial<ForgottenPasswordEntity>) {
     const userForgotPassword = ForgottenPasswordEntity.create(data as ForgottenPasswordEntity);
 
     return this.forgottenPasswordRepository.save(userForgotPassword);
   }
 
   public async createForgottenPasswordToken(user: UserEntity) {
-    const token = this.jwtService.generateToken({
-      email: user.email,
-      roles: user.roles,
-      userId: user.id
-    });
+    const emailToken = this.encryptionService.generateToken(user.email);
+    const expirationDate = dayjs().add(1, 'day').toDate();
     const newTimestamp = new Date();
 
-    if (!user.forgottenPassword) {
-      return await this.saveForgottenPasswordToken({
-        token: token.accessToken,
-        timestamp: newTimestamp,
-      });
+    // If the user already has a forgotten password token, check if enough time has elapsed
+    if (user.forgottenPassword) {
+      const elapsedTime = isElapsedTime(user.forgottenPassword.timestamp);
+      if (!elapsedTime) {
+        // Not enough time has elapsed since the last token was sent
+        throw new BadRequestException('Email sent recently');
+      }
     }
-    const elapsedTime = isElapsedTime(user.forgottenPassword.timestamp);
-    if (elapsedTime) {
-      // TODO: Add exception with returned timestamp
-      throw new Error('Email sent recently');
-    } else {
-      return await this.saveForgottenPasswordToken({
-        id: user.forgottenPassword.id,
-        token: token.accessToken,
-        timestamp: newTimestamp,
-      });
+
+    // If no token exists or enough time has elapsed, save a new or updated token
+    return await this.saveForgottenPasswordToken({
+      id: user.forgottenPassword?.id, // Reuse existing ID if available
+      token: emailToken,
+      timestamp: newTimestamp,
+      expirationDate
+    });
+  }
+
+  public async validateResetPasswordToken(record: ForgottenPasswordEntity): Promise<ForgottenPasswordEntity> {
+    if (!record) {
+      throw new NotFoundException('Token not found.');
     }
+
+    const tokenHasExpired = dayjs().isAfter(dayjs(record.expirationDate));
+    if (tokenHasExpired) {
+      throw new BadRequestException('Token has expired.');
+    }
+
+    const now = dayjs();
+    const minutesSinceLastAttempt = record.lastAttemptDate ? now.diff(dayjs(record.lastAttemptDate), 'minute') : Number.MAX_SAFE_INTEGER;
+
+    // After the second attempt, add a delay
+    const delayAfterSecondAttempt = 5;// Delay in minutes after the second attempt
+    if (record.attempts >= 2 && minutesSinceLastAttempt < delayAfterSecondAttempt) {
+      throw new BadRequestException('Please wait before trying again.');
+    }
+
+    // Update the number of attempts and the time of the last attempt
+    record.attempts += 1;
+    record.lastAttemptDate = now.toDate();
+    await this.forgottenPasswordRepository.save(record);
+
+    return record;
   }
 }

@@ -55,17 +55,8 @@ export class AuthController {
     type: 'string',
   })
   @HttpCode(HttpStatus.OK)
-  public async sendEmailForgotPassword(@Param() { email }: { email: string }) {
-    const isEmailSent = await this.emailService.sendEmailForgotPassword(email);
-
-    if (isEmailSent) {
-      return {
-        message: 'A confirmation email has been sent to your email, confirm it.',
-        confirm: true,
-      };
-    } else {
-      throw new BadRequestException('Mail not sent');
-    }
+  public sendEmailForgotPassword(@Param() { email }: { email: string }) {
+    return this.emailService.sendEmailForgotPassword(email);
   }
 
   @Get('/reset-password/:token')
@@ -75,9 +66,10 @@ export class AuthController {
     description: 'Token for reset password',
     type: 'string',
   })
-  @Redirect('/')
+  @Redirect()
   public async resetPassword(@Param() { token }: { token: string }) {
     const forgottenPasswordEntity = await this.mailService.findForgottenPasswordUser({ token });
+    const host = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
 
     //TODO: Move logic in email service
     if (forgottenPasswordEntity) {
@@ -85,7 +77,9 @@ export class AuthController {
       await this.mailService.deleteForgottenPassword({
         token,
       });
-      return `${this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost}/auth/reset-password?changePass=true&token=${token}`;
+      return {
+        url: `${host}/auth/reset-password?changePass=true&token=${token}`
+      }
     } else {
       throw new BadRequestException("Token doesn't exists");
     }
