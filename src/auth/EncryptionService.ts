@@ -6,14 +6,16 @@ import {Injectable} from "@nestjs/common";
 
 @Injectable()
 export class EncryptionService {
-  private encryptionKey: Buffer; // Ключ должен быть длиной 32 байта для AES-256
-  private ivLength = 16; // Длина IV для AES-256-CBC составляет 16 байт
+  // The key must be 32 bytes long for AES-256
+  private readonly encryptionKey: Buffer;
+  // IV length for AES-256-CBC is 16 bytes
+  private ivLength = 16;
 
   constructor(
     private configService: ConfigService
   ) {
     const key = configService.get<AuthConfig>(ConfigEnum.AUTH).encryptionKey
-    this.encryptionKey = Buffer.from(key, 'hex'); // Пример получения ключа из переменных окружения
+    this.encryptionKey = Buffer.from(key, 'hex');
   }
 
  public encrypt(text: string): string {
@@ -21,7 +23,8 @@ export class EncryptionService {
     const cipher = createCipheriv('aes-256-cbc', this.encryptionKey, iv);
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    return iv.toString('hex') + ':' + encrypted; // Возвращаем IV и зашифрованный текст в формате hex, разделенные двоеточием
+    // Return IV and ciphertext in hex format, separated by colon
+    return iv.toString('hex') + ':' + encrypted;
   }
 
   public decrypt(encryptedText: string): string {
@@ -36,5 +39,10 @@ export class EncryptionService {
 
   public createHash(text: string) {
     return createHash('sha256').update(text).digest('hex');
+  }
+
+  public generateToken(text: string): string {
+    const uniqueData = text + randomBytes(16).toString('hex');
+    return createHash('sha256').update(uniqueData).digest('hex');
   }
 }
