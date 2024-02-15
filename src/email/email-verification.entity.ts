@@ -11,7 +11,8 @@ export class EmailVerificationEntity extends BaseEntity {
   expirationDate: Date;
 
   @OneToOne(() => UserEntity, {
-    onDelete: 'CASCADE'
+    onDelete: 'CASCADE',
+    eager: true,
   })
   @JoinColumn()
   user: Relation<UserEntity>;
