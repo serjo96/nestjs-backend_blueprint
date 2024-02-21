@@ -80,15 +80,20 @@ export class EmailVerificationService {
     if (emailVerification && elapsedTime) {
       // TODO: Add exception with returned timestamp
       throw new BadRequestException('Email sent recently');
-    } else {
-      emailToken = this.encryptionService.generateToken(email);
-      const expirationDate = dayjs().add(1, 'day').toDate();
-
-      await this.saveEmailVerification({
-        token: emailToken,
-        expirationDate,
-      });
     }
+
+    if (emailVerification) {
+      await this.deleteEmailVerification(emailVerification.id);
+    }
+
+    emailToken = this.encryptionService.generateToken(email);
+    const expirationDate = dayjs().add(1, 'day').toDate();
+
+    await this.saveEmailVerification({
+      token: emailToken,
+      expirationDate,
+    });
+
     return emailToken;
   }
 
