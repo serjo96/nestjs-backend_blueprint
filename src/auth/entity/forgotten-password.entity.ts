@@ -1,30 +1,24 @@
 import { UserEntity } from '~/users/users.entity';
 import { Column, Entity, JoinColumn, OneToOne, Relation } from 'typeorm';
-import {UTCDateColumn} from "~/common/decorators/utc-date.decorator";
 import {BaseEntity} from "~/common/base-entity";
 
 
 @Entity('forgotten-password')
-export class ForgottenPasswordEntity extends BaseEntity {
+export class ForgottenPasswordEntity extends BaseEntity implements TokenVerificationEntity {
   @Column({
     type: 'varchar',
     nullable: false,
   })
   token: string;
 
-  @OneToOne(() => UserEntity, (user) => user.forgottenPassword)
-  @JoinColumn()
-  user: Relation<UserEntity>;
-
-  @UTCDateColumn({
-    type: 'timestamp',
-    nullable: false,
-  })
-  timestamp: Date;
-
   @Column({ type: 'timestamp with time zone' })
   expirationDate: Date;
 
+  @OneToOne(() => UserEntity, (user) => user.forgottenPassword, {
+      onDelete: 'CASCADE',
+    })
+  @JoinColumn()
+  user: Relation<UserEntity>;
 
   @Column({
     type: 'int',
@@ -37,5 +31,4 @@ export class ForgottenPasswordEntity extends BaseEntity {
     nullable: true,
   })
   lastAttemptDate: Date | null;
-
 }
