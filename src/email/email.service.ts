@@ -54,10 +54,10 @@ export class EmailService {
 
   public async sendEmailVerification(email: string, token: string): Promise<SentMessageInfo> {
       const {address, name} = this.configService.get<SmtpConfig>(ConfigEnum.SMTP)
-      const clientHost = this.configService.get<string>(ConfigEnum.FRONTEND_HOST)
+      const {baseHost} = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT)
       const context = {
           emailToken: token,
-          baseURl: clientHost,
+          baseURl: baseHost,
           email: email,
         };
         const mailOptions = {
@@ -96,7 +96,7 @@ export class EmailService {
       throw new BadRequestException(`User doesn't exist or forgotten password token is missing.`);
     }
     const tokenModel = await this.mailService.validateResetPasswordToken(user.forgottenPassword);
-    const targetLink = `${projectConfig.frontendHost}/api/v1/auth/reset-password/${tokenModel.token}`;
+    const targetLink = `${projectConfig.baseHost}/api/v1/auth/reset-password/${tokenModel.token}`;
 
     const mailOptions = {
       from: smtpConfig.address,

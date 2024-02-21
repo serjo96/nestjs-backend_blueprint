@@ -12,6 +12,7 @@ export type ConfigType = {
 
   PORT?: number;
   FRONTEND_HOST?: string;
+  BASE_URL?: string;
   SENTRY_DSN?: string;
 
   SMTP_NAME?: string;
