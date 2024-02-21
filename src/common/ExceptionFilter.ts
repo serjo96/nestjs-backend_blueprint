@@ -4,6 +4,7 @@ import {TypeORMError} from "typeorm";
 
 import {CustomServerException} from "~/common/exceptions/CustomServerException";
 import {DatabaseError} from "~/common/exceptions/DatabaseError";
+import {RateLimitException} from "~/common/exceptions/RateLimitException";
 
 type ResponseData = {
 	statusCode: HttpStatus,
@@ -11,6 +12,9 @@ type ResponseData = {
 	stackTrace?: string
   errors?: {
     [key: string]: string[];
+  }
+  payload?: {
+    [key: string]: string | number;
   }
 }
 
@@ -34,6 +38,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     } else if(exception instanceof CustomServerException ) {
       responseData.statusCode = 500;
       responseData.message = exception.message;
+    } else if (exception instanceof RateLimitException) {
+      responseData.statusCode = exception.getStatus();
+      responseData.message = exception.message;
+      responseData.payload = { unlockTime: exception.unlockTime };
     } else if (exception.getStatus && exception.getStatus() !== 500 || exception instanceof HttpException) {
       const exceptionResp = exception.getResponse()
       responseData.statusCode = exception.getStatus();

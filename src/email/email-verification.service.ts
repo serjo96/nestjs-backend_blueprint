@@ -17,6 +17,7 @@ import {DatabaseError} from "~/common/exceptions/DatabaseError";
 import {EncryptionService} from "~/auth/EncryptionService";
 import {UserEntity} from "@user/users.entity";
 import {FindOptionsWhere} from "typeorm/find-options/FindOptionsWhere";
+import {RateLimitException} from "~/common/exceptions/RateLimitException";
 
 @Injectable()
 export class EmailVerificationService {
@@ -174,7 +175,9 @@ export class EmailVerificationService {
     // After the second attempt, add a delay
     const delayAfterSecondAttempt = 5;// Delay in minutes after the second attempt
     if (record.attempts >= 2 && minutesSinceLastAttempt < delayAfterSecondAttempt) {
-      throw new BadRequestException('Please wait before trying again.');
+      // Get the unlock time in Unix format
+      const unlockTime = now.add(delayAfterSecondAttempt - minutesSinceLastAttempt, 'minute').unix();
+      throw new RateLimitException('Please wait before trying again.', unlockTime);
     }
 
     // Update the number of attempts and the time of the last attempt
