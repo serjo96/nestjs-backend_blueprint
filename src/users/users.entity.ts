@@ -5,6 +5,7 @@ import {BaseEntity} from '~/common/base-entity';
 import {Profile} from './profiles.entity';
 import {ForgottenPasswordEntity} from "~/auth/entity/forgotten-password.entity";
 import {RefreshToken} from "~/auth/entity/refresh-token.entity";
+import {EmailVerificationEntity} from "~/email/email-verification.entity";
 
 export enum RolesEnum {
   GUEST = 'guest',
@@ -56,16 +57,19 @@ export class UserEntity extends BaseEntity {
     type: 'timestamp with time zone',
     nullable: true
   })
- public lastActiveAt: Date;
+  public lastActiveAt: Date;
 
   @OneToOne(() => Profile, (profile) => profile.user, {
     eager: true,
   })
-  profile: Profile;
+  public profile: Profile;
 
   @OneToOne(() => ForgottenPasswordEntity, (ForgottenPassword) => ForgottenPassword.user)
   public forgottenPassword: ForgottenPasswordEntity;
 
+  @OneToOne(() => EmailVerificationEntity, (emailVerification) => emailVerification.user)
+  public emailVerification: EmailVerificationEntity;
+
   @OneToMany(() => RefreshToken, refreshToken => refreshToken.user)
-  refreshTokens: RefreshToken[];
+  public refreshTokens: RefreshToken[];
 }
