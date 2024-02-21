@@ -6,9 +6,7 @@ import dayjs from "dayjs";
 
 import { UsersService } from '@user/users.service';
 
-import { JWTService } from '~/auth/jwt.service';
 import { EmailService } from '~/email/email.service';
-import { isElapsedTime } from '~/utils/isElapsedTime';
 import { GetRepositoryMethodsArgs } from '~/utils/typeUtils/getRepositoryMethodsArgs';
 
 import { EmailVerificationEntity } from './email-verification.entity';
@@ -26,8 +24,6 @@ export class EmailVerificationService {
     private readonly emailVerificationRepository: Repository<EmailVerificationEntity>,
     @InjectRepository(ForgottenPasswordEntity)
     private readonly forgottenPasswordRepository: Repository<ForgottenPasswordEntity>,
-
-    private readonly jwtService: JWTService,
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
 
@@ -67,35 +63,6 @@ export class EmailVerificationService {
     return this.emailVerificationRepository.save(entity).catch(err => {
       throw new DatabaseError(err.message);
     });
-  }
-
-  public async createEmailToken(email: string): Promise<string | null> {
-    let emailToken = null;
-    const emailVerification = await this.findOneBy({
-      user: {
-        email
-      },
-    });
-    const elapsedTime = emailVerification && isElapsedTime(emailVerification.expirationDate);
-
-    if (emailVerification && elapsedTime) {
-      // TODO: Add exception with returned timestamp
-      throw new BadRequestException('Email sent recently');
-    }
-
-    if (emailVerification) {
-      await this.deleteEmailVerification(emailVerification.id);
-    }
-
-    emailToken = this.encryptionService.generateToken(email);
-    const expirationDate = dayjs().add(1, 'day').toDate();
-
-    await this.saveEmailVerification({
-      token: emailToken,
-      expirationDate,
-    });
-
-    return emailToken;
   }
 
   public async verifyEmail(token: string) {
@@ -140,51 +107,82 @@ export class EmailVerificationService {
     const emailToken = this.encryptionService.generateToken(user.email);
     const expirationDate = dayjs().add(1, 'day').toDate();
     const newTimestamp = new Date();
-
-    // If the user already has a forgotten password token, check if enough time has elapsed
-    if (user.forgottenPassword) {
-      const elapsedTime = isElapsedTime(user.forgottenPassword.timestamp);
-      if (!elapsedTime) {
-        // Not enough time has elapsed since the last token was sent
-        throw new BadRequestException('Email sent recently');
-      }
-    }
-
-    // If no token exists or enough time has elapsed, save a new or updated token
-    return await this.saveForgottenPasswordToken({
-      id: user.forgottenPassword?.id, // Reuse existing ID if available
+    const tokenPayload =  {
       token: emailToken,
-      timestamp: newTimestamp,
-      expirationDate
-    });
+      expirationDate,
+      attempts: 1,
+      lastAttemptDate: newTimestamp
+    };
+
+    return this.forgottenPasswordRepository.create(tokenPayload);
+  }
+  public async createVerificationToken(user: UserEntity) {
+    const emailToken = this.encryptionService.generateToken(user.email);
+    const expirationDate = dayjs().add(1, 'day').toDate();
+    const newTimestamp = new Date();
+    const tokenPayload =  {
+      id: user.emailVerification?.id, // Reuse existing ID if available
+      token: emailToken,
+      expirationDate,
+      attempts: 1,
+      lastAttemptDate: newTimestamp
+    };
+
+    return this.emailVerificationRepository.create(tokenPayload);
   }
 
-  public async validateResetPasswordToken(record: ForgottenPasswordEntity): Promise<ForgottenPasswordEntity> {
-    if (!record) {
-      throw new NotFoundException('Token not found.');
+  public async validateResetPasswordToken(email: string): Promise<ForgottenPasswordEntity> {
+    const user = await this.usersService.findByEmail(email, { forgottenPassword: true });
+    const forgottenPasswordEntity = user?.forgottenPassword;
+
+    if (!user) {
+      throw new NotFoundException(`User doesn't exist`);
     }
 
-    const tokenHasExpired = dayjs().isAfter(dayjs(record.expirationDate));
+    const tokenHasExpired = dayjs().isAfter(dayjs(forgottenPasswordEntity.expirationDate));
     if (tokenHasExpired) {
       throw new BadRequestException('Token has expired.');
     }
 
     const now = dayjs();
-    const minutesSinceLastAttempt = record.lastAttemptDate ? now.diff(dayjs(record.lastAttemptDate), 'minute') : Number.MAX_SAFE_INTEGER;
+    const minutesSinceLastAttempt = forgottenPasswordEntity.lastAttemptDate ? now.diff(dayjs(forgottenPasswordEntity.lastAttemptDate), 'minute') : Number.MAX_SAFE_INTEGER;
 
     // After the second attempt, add a delay
     const delayAfterSecondAttempt = 5;// Delay in minutes after the second attempt
-    if (record.attempts >= 2 && minutesSinceLastAttempt < delayAfterSecondAttempt) {
+    if (forgottenPasswordEntity.attempts >= 2 && minutesSinceLastAttempt < delayAfterSecondAttempt) {
       // Get the unlock time in Unix format
       const unlockTime = now.add(delayAfterSecondAttempt - minutesSinceLastAttempt, 'minute').unix();
       throw new RateLimitException('Please wait before trying again.', unlockTime);
     }
 
     // Update the number of attempts and the time of the last attempt
-    record.attempts += 1;
-    record.lastAttemptDate = now.toDate();
-    await this.forgottenPasswordRepository.save(record);
+    forgottenPasswordEntity.attempts += 1;
+    forgottenPasswordEntity.lastAttemptDate = now.toDate();
+    await this.forgottenPasswordRepository.save(forgottenPasswordEntity);
 
-    return record;
+    return forgottenPasswordEntity;
+  }
+
+  public validateToken(entity: EmailVerificationEntity | ForgottenPasswordEntity): EmailVerificationEntity | ForgottenPasswordEntity {
+    const now = dayjs();
+    const tokenHasExpired = now.isAfter(dayjs(entity.expirationDate));
+    if (tokenHasExpired) {
+      throw new BadRequestException('Token has expired.');
+    }
+
+    const minutesSinceLastAttempt = entity.lastAttemptDate
+      ? now.diff(dayjs(entity.lastAttemptDate), 'minute')
+      : Number.MAX_SAFE_INTEGER;
+
+    const delayAfterSecondAttempt = 5; // Задержка в минутах после второй попытки
+    if (entity.attempts >= 2 && minutesSinceLastAttempt < delayAfterSecondAttempt) {
+      const unlockTime = now.add(delayAfterSecondAttempt - minutesSinceLastAttempt, 'minute').unix();
+      throw new RateLimitException('Please wait before trying again.', unlockTime);
+    }
+
+    entity.attempts += 1;
+    entity.lastAttemptDate = now.toDate();
+
+    return entity;
   }
 }
