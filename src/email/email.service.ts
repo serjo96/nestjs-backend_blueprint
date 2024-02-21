@@ -1,6 +1,6 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { ISendMailOptions } from '@nestjs-modules/mailer/dist/interfaces/send-mail-options.interface';
-import { BadRequestException, Inject, Injectable, forwardRef } from "@nestjs/common";
+import { Inject, Injectable, forwardRef } from "@nestjs/common";
 import { join } from 'path';
 import { SentMessageInfo } from 'nodemailer';
 import {ConfigService} from "@nestjs/config";
@@ -87,16 +87,10 @@ export class EmailService {
     await this.sendEmail(mailOptions)
   }
 
-  public async sendEmailForgotPassword(email: string): Promise<SentMessageInfo> {
+  public async sendEmailForgotPassword(email: string, token: string): Promise<SentMessageInfo> {
     const smtpConfig = this.configService.get<SmtpConfig>(ConfigEnum.SMTP);
     const projectConfig = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT);
-    const user = await this.usersService.findByEmail(email, { forgottenPassword: true });
-
-    if (!user || !user.forgottenPassword) {
-      throw new BadRequestException(`User doesn't exist or forgotten password token is missing.`);
-    }
-    const tokenModel = await this.mailService.validateResetPasswordToken(user.forgottenPassword);
-    const targetLink = `${projectConfig.baseHost}/api/v1/auth/reset-password/${tokenModel.token}`;
+    const targetLink = `${projectConfig.baseHost}/api/v1/auth/reset-password/${token}`;
 
     const mailOptions = {
       from: smtpConfig.address,
