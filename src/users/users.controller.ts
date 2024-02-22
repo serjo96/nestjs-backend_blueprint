@@ -58,12 +58,9 @@ export class UsersController {
         message: "You can't delete yourself",
       });
     }
-    try {
-      await this.usersService.removeUser(id);
-      deletedUser = await this.usersService.findById(id, { withDeleted: true });
-    } catch (error) {
-      throw new BadRequestException(error);
-    }
+    await this.usersService.removeUser(id);
+    deletedUser = await this.usersService.findOne({id}, { withDeleted: true });
+
     return deletedUser;
   }
 
@@ -88,7 +85,7 @@ export class UsersController {
     @Body() body: EditUserDto
   ): Promise<{ data: UserEntity }> {
     let editedUser;
-    const updatingUser = await this.usersService.findById(id);
+    const updatingUser = await this.usersService.findOne({id});
     if (!updatingUser) {
       throw new BadRequestException({
         message: `User doesn't exist`,

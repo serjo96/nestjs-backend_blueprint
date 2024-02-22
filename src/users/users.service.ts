@@ -25,17 +25,12 @@ export class UsersService {
     });
   }
 
-  public findOne(where: FindOptionsWhere<UserEntity>): Promise<UserEntity | undefined> {
+  public findOne(where: FindOptionsWhere<UserEntity>, opts?: FindOneOptions<UserEntity>): Promise<UserEntity | undefined> {
     return this.userRepository.findOne({
       where,
       order: { id: 'desc' },
+      ...opts,
     }).catch(err => {
-      throw new DatabaseError(err.message);
-    });
-  }
-
-  public async findById(id: string, opts?: FindOneOptions<UserEntity>): Promise<UserEntity | null> {
-    return await this.userRepository.findOneOrFail({ where: { id }, ...opts }).catch(err => {
       throw new DatabaseError(err.message);
     });
   }
