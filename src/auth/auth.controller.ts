@@ -89,10 +89,11 @@ export class AuthController {
     const userEntity = await this.verificationService.verifyForgotPasswordToken(token)
     const host = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
 
-    const newPassword = this.authService.resetPassword(userEntity)
+    const newPassword = await this.authService.resetPassword(userEntity)
     await this.verificationService.deleteForgottenPassword({
       token,
     });
+    await this.emailService.sendResetPasswordEmail(userEntity.email, newPassword)
     return {
       url: `${host}/auth/reset-password?changePass=true&token=${token}`
     }

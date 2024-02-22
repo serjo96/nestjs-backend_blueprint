@@ -24,7 +24,10 @@ export class EmailService {
   ) {}
 
   public async sendEmail(mailOptions: ISendMailOptions): Promise<SentMessageInfo> {
+    const {address, name} = this.configService.get<SmtpConfig>(ConfigEnum.SMTP)
     const options = {
+      from: address,
+      sender: name,
       ...mailOptions,
     };
 
@@ -33,18 +36,15 @@ export class EmailService {
     })
   }
 
-  async testSend(email: string) {
-      const {address, name} = this.configService.get<SmtpConfig>(ConfigEnum.SMTP)
+  public async testSend(email: string) {
       const context = {
         emailToken: 222,
         baseURl: this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost,
         email,
       };
       const mailOptions = {
-        from: address,
-        sender: name,
-        to: email, // list of receivers (separated by ,)
-        subject: 'Confirm you account on Camp desk',
+        to: email,
+        subject: 'Confirm you account on <YOUR APP>',
         message: 'Confirm registration',
         template: join(__dirname, 'templates/confirmation'),
         context,
@@ -52,49 +52,41 @@ export class EmailService {
       return await this.sendEmail(mailOptions);
   }
 
-  public async sendEmailVerification(email: string, token: string): Promise<SentMessageInfo> {
-      const {address, name} = this.configService.get<SmtpConfig>(ConfigEnum.SMTP)
-      const {baseHost} = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT)
-      const context = {
-          emailToken: token,
-          baseURl: baseHost,
-          email: email,
-        };
-        const mailOptions = {
-          from: address,
-          sender: name,
-          to: email, // list of receivers (separated by ,)
-          subject: 'Confirm you account on <YOUR APP>',
-          message: 'Confirm registration',
-          template: join(__dirname, 'templates/confirmation'),
-          context,
-        };
-        return await this.sendEmail(mailOptions);
+  public async sendEmailVerification(email: string, token: string) {
+    const {baseHost} = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT)
+    const context = {
+      emailToken: token,
+      baseURl: baseHost,
+      email: email,
+    };
+    const mailOptions = {
+      to: email, // list of receivers (separated by ,)
+      subject: 'Confirm you account on <YOUR APP>',
+      message: 'Confirm registration',
+      template: join(__dirname, 'templates/confirmation'),
+      context,
+    };
+
+    return this.sendEmail(mailOptions);
   }
 
   public async sendSuccessRegistrationEmail(email: string) {
-    const {address, name} = this.configService.get<SmtpConfig>(ConfigEnum.SMTP)
     const clientUrl = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost;
     const mailOptions = {
-      from: address,
-      sender: name,
       to: email,
       subject: 'Success registration',
       message: 'Congrats with success registration',
       template: join(__dirname, 'templates/success-registration'),
       context: {clientUrl},
     };
-    await this.sendEmail(mailOptions)
+    return this.sendEmail(mailOptions)
   }
 
-  public async sendEmailForgotPassword(email: string, token: string): Promise<SentMessageInfo> {
-    const smtpConfig = this.configService.get<SmtpConfig>(ConfigEnum.SMTP);
+  public async sendEmailForgotPassword(email: string, token: string) {
     const projectConfig = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT);
     const targetLink = `${projectConfig.baseHost}/api/v1/auth/reset-password/${token}`;
 
     const mailOptions = {
-      from: smtpConfig.address,
-      sender: smtpConfig.name,
       to: email,
       subject: 'Forgotten password',
       message: 'Forgot password',
@@ -102,6 +94,17 @@ export class EmailService {
       context: { targetLink },
     };
 
+    return this.sendEmail(mailOptions);
+  }
+
+  public async sendResetPasswordEmail(email: string, password: string){
+    const mailOptions = {
+      to: email,
+      subject: 'Reset password',
+      message: 'Reset password',
+      template: join(__dirname, 'templates/new-password'),
+      context: { password },
+    };
 
     return this.sendEmail(mailOptions);
   }
