@@ -6,7 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
 
 import { UsersModule } from '@user/users.module';
-import { EmailVerificationService } from '~/email/email-verification.service';
+import { VerificationService } from '~/email/verification.service';
 
 import { EmailService } from './email.service';
 import {ForgottenPasswordEntity} from "~/auth/entity/forgotten-password.entity";
@@ -51,7 +51,7 @@ import {ConfigEnum} from "~/config/main-config";
       },
     }),
   ],
-  providers: [EmailService, EmailVerificationService],
-  exports: [EmailService, EmailVerificationService, TypeOrmModule],
+  providers: [EmailService, VerificationService],
+  exports: [EmailService, VerificationService, TypeOrmModule],
 })
 export class EmailModule {}

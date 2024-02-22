@@ -1,4 +1,4 @@
-import {BadRequestException, Inject, Injectable, forwardRef, NotFoundException} from "@nestjs/common";
+import {BadRequestException, Inject, Injectable, forwardRef} from "@nestjs/common";
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {ConfigService} from "@nestjs/config";
@@ -18,7 +18,7 @@ import {FindOptionsWhere} from "typeorm/find-options/FindOptionsWhere";
 import {RateLimitException} from "~/common/exceptions/RateLimitException";
 
 @Injectable()
-export class EmailVerificationService {
+export class VerificationService {
   constructor(
     @InjectRepository(EmailVerificationEntity)
     private readonly emailVerificationRepository: Repository<EmailVerificationEntity>,
@@ -65,7 +65,7 @@ export class EmailVerificationService {
     });
   }
 
-  public async verifyEmail(token: string) {
+  public async verifyConfirmToken(token: string) {
     const verificationRecord = await this.emailVerificationRepository.findOne({
       where: { token },
       relations: ['user']
@@ -88,6 +88,7 @@ export class EmailVerificationService {
 
 
     if (verificationRecord.user) {
+      // Added confirm flag for user
       await this.usersService.updateUserFiled(verificationRecord.user.id, { confirmed: true });
       // Remove used user token
       await this.emailVerificationRepository.remove(verificationRecord);
@@ -95,6 +96,36 @@ export class EmailVerificationService {
       throw new BadRequestException('Associated user not found.');
     }
     return verificationRecord.user.email
+  }
+  public async verifyForgotPasswordToken(token: string) {
+    const verificationRecord = await this.forgottenPasswordRepository.findOne({
+      where: { token },
+      relations: ['user']
+    }).catch(err => {
+      throw new DatabaseError(err.message);
+    });
+
+    if (!verificationRecord) {
+      throw new BadRequestException('Token not found.');
+    }
+
+    const isExpired = dayjs().isAfter(dayjs(verificationRecord.expirationDate));
+    if (isExpired) {
+      // Optional: it is possible to remove a token entry from the database if it has expired
+      await this.forgottenPasswordRepository.remove(verificationRecord).catch(err => {
+        throw new DatabaseError(err.message);
+      });
+      throw new BadRequestException('Token is expired.');
+    }
+
+
+    if (verificationRecord.user) {
+      // Remove used user token
+      await this.emailVerificationRepository.remove(verificationRecord);
+    } else {
+      throw new BadRequestException('Associated user not found.');
+    }
+    return verificationRecord.user
   }
 
   public saveForgottenPasswordToken(data: Partial<ForgottenPasswordEntity>) {
@@ -129,38 +160,6 @@ export class EmailVerificationService {
     };
 
     return this.emailVerificationRepository.create(tokenPayload);
-  }
-
-  public async validateResetPasswordToken(email: string): Promise<ForgottenPasswordEntity> {
-    const user = await this.usersService.findByEmail(email, { forgottenPassword: true });
-    const forgottenPasswordEntity = user?.forgottenPassword;
-
-    if (!user) {
-      throw new NotFoundException(`User doesn't exist`);
-    }
-
-    const tokenHasExpired = dayjs().isAfter(dayjs(forgottenPasswordEntity.expirationDate));
-    if (tokenHasExpired) {
-      throw new BadRequestException('Token has expired.');
-    }
-
-    const now = dayjs();
-    const minutesSinceLastAttempt = forgottenPasswordEntity.lastAttemptDate ? now.diff(dayjs(forgottenPasswordEntity.lastAttemptDate), 'minute') : Number.MAX_SAFE_INTEGER;
-
-    // After the second attempt, add a delay
-    const delayAfterSecondAttempt = 5;// Delay in minutes after the second attempt
-    if (forgottenPasswordEntity.attempts >= 2 && minutesSinceLastAttempt < delayAfterSecondAttempt) {
-      // Get the unlock time in Unix format
-      const unlockTime = now.add(delayAfterSecondAttempt - minutesSinceLastAttempt, 'minute').unix();
-      throw new RateLimitException('Please wait before trying again.', unlockTime);
-    }
-
-    // Update the number of attempts and the time of the last attempt
-    forgottenPasswordEntity.attempts += 1;
-    forgottenPasswordEntity.lastAttemptDate = now.toDate();
-    await this.forgottenPasswordRepository.save(forgottenPasswordEntity);
-
-    return forgottenPasswordEntity;
   }
 
   public validateToken(entity: EmailVerificationEntity | ForgottenPasswordEntity): EmailVerificationEntity | ForgottenPasswordEntity {

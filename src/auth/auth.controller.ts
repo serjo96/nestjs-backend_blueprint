@@ -4,7 +4,7 @@ import {ApiOkResponse, ApiParam, ApiResponse, ApiTags} from '@nestjs/swagger';
 import { BadRequestException } from '~/common/exceptions/bad-request';
 
 import { EmailService } from '~/email/email.service';
-import { EmailVerificationService } from "~/email/email-verification.service";
+import { VerificationService } from "~/email/verification.service";
 import { AuthService } from './auth.service';
 
 import { CreateUserDto } from '@user/dto/create-user.dto';
@@ -21,7 +21,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly userService: UsersService,
     private readonly emailService: EmailService,
-    private readonly mailService: EmailVerificationService,
+    private readonly verificationService: VerificationService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -36,9 +36,9 @@ export class AuthController {
   public async register(@Body() createUserDto: CreateUserDto): Promise<UserWithToken> {
     const userData = await this.authService.register(createUserDto);
 
-    const verificationEntity = await this.mailService.createVerificationToken(userData.user);
+    const verificationEntity = await this.verificationService.createVerificationToken(userData.user);
     await this.emailService.sendEmailVerification(userData.user.email, verificationEntity.token);
-    await this.mailService.saveEmailVerification(verificationEntity)
+    await this.verificationService.saveEmailVerification(verificationEntity)
     return userData
   }
 
@@ -68,13 +68,13 @@ export class AuthController {
     }
 
     if(!user.forgottenPassword) {
-      forgottenPasswordEntity = await this.mailService.createForgottenPasswordToken(user)
+      forgottenPasswordEntity = await this.verificationService.createForgottenPasswordToken(user)
     } else {
-      forgottenPasswordEntity = this.mailService.validateToken(user.forgottenPassword);
+      forgottenPasswordEntity = this.verificationService.validateToken(user.forgottenPassword);
     }
 
     await this.emailService.sendEmailForgotPassword(email, forgottenPasswordEntity.token);
-    await this.mailService.saveForgottenPasswordToken(forgottenPasswordEntity)
+    await this.verificationService.saveForgottenPasswordToken(forgottenPasswordEntity)
   }
 
   @Get('/reset-password/:token')
@@ -86,20 +86,15 @@ export class AuthController {
   })
   @Redirect()
   public async resetPassword(@Param() { token }: { token: string }) {
-    const forgottenPasswordEntity = await this.mailService.findForgottenPasswordUser({ token });
+    const userEntity = await this.verificationService.verifyForgotPasswordToken(token)
     const host = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
-    this.mailService.validateToken(forgottenPasswordEntity);
 
-    if (forgottenPasswordEntity) {
-      // TODO: Add generate new password
-      await this.mailService.deleteForgottenPassword({
-        token,
-      });
-      return {
-        url: `${host}/auth/reset-password?changePass=true&token=${token}`
-      }
-    } else {
-      throw new BadRequestException("Token doesn't exists");
+    const newPassword = this.authService.resetPassword(userEntity)
+    await this.verificationService.deleteForgottenPassword({
+      token,
+    });
+    return {
+      url: `${host}/auth/reset-password?changePass=true&token=${token}`
     }
   }
 
@@ -125,14 +120,14 @@ export class AuthController {
     }
 
     if(!user.forgottenPassword) {
-      verificationEntity = await this.mailService.createVerificationToken(user)
+      verificationEntity = await this.verificationService.createVerificationToken(user)
     } else {
-      verificationEntity = this.mailService.validateToken(user.forgottenPassword);
-      await this.mailService.deleteEmailVerification(user.emailVerification.id)
+      verificationEntity = this.verificationService.validateToken(user.forgottenPassword);
+      await this.verificationService.deleteEmailVerification(user.emailVerification.id)
     }
 
     await this.emailService.sendEmailVerification(email, verificationEntity.token);
-    await this.mailService.saveEmailVerification(verificationEntity)
+    await this.verificationService.saveEmailVerification(verificationEntity)
     return 'ok'
   }
 
@@ -155,7 +150,7 @@ export class AuthController {
     const logger = new Logger(AuthController.name);
 
     try {
-      const userEmail = await this.mailService.verifyEmail(token);
+      const userEmail = await this.verificationService.verifyConfirmToken(token);
       await this.emailService.sendSuccessRegistrationEmail(userEmail);
     } catch (error) {
       logger.error(`Error during email confirmation: ${error.message}`, error.stack);
