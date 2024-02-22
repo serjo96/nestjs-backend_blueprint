@@ -9,6 +9,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 
 import { UserEntity } from './users.entity';
 import {DatabaseError} from "~/common/exceptions/DatabaseError";
+import {FindOptionsWhere} from "typeorm/find-options/FindOptionsWhere";
+import {FindManyOptions} from "typeorm/find-options/FindManyOptions";
 
 @Injectable()
 export class UsersService {
@@ -17,11 +19,11 @@ export class UsersService {
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  findAll(where: any): Promise<UserEntity[]> {
+  public findAll(where: FindManyOptions<UserEntity>): Promise<UserEntity[]> {
     return this.userRepository.find(where);
   }
 
-  findOne(where: any): Promise<UserEntity | undefined> {
+  public findOne(where: FindOptionsWhere<UserEntity>): Promise<UserEntity | undefined> {
     return this.userRepository.findOne({
       where,
       order: { id: 'desc' },
