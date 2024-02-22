@@ -53,7 +53,21 @@ export class AuthService {
     return this.refreshTokensRepository.delete({token: refreshToken})
   }
 
-  async validateUserByPassword({ email, password }: ValidateUserByPasswordPayload) {
+  private generateRandomPassword(length: number = 12): string {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+=';
+    let result = '';
+    const charactersLength = characters.length;
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+  }
+
+  private async comparePassword(attempt: string, dbPassword: string): Promise<boolean> {
+    return await bcrypt.compare(attempt, dbPassword);
+  }
+
+  private async validateUserByPassword({ email, password }: ValidateUserByPasswordPayload) {
     // find if user exist with this email
     const user = await this.userService.findByEmail(email);
     if (!user) {
@@ -67,28 +81,6 @@ export class AuthService {
     }
 
     return user;
-  }
-
-  public async resetPassword(user: UserEntity): Promise<string> {
-    const newPassword = this.generateRandomPassword();
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    await this.userService.updateUser(user.id, { password: hashedPassword });
-    return newPassword;
-  }
-
-  private generateRandomPassword(length: number = 12): string {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+=';
-    let result = '';
-    const charactersLength = characters.length;
-    for (let i = 0; i < length; i++) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-    return result;
-  }
-
-  private async comparePassword(attempt: string, dbPassword: string): Promise<boolean> {
-    return await bcrypt.compare(attempt, dbPassword);
   }
 
   async register(userDto: CreateUserDto): Promise<UserWithToken> {
@@ -106,7 +98,7 @@ export class AuthService {
     };
   }
 
-  async login(loginUserDto: LoginByEmail): Promise<UserWithToken> {
+  public async login(loginUserDto: LoginByEmail): Promise<UserWithToken> {
     const user = await this.validateUserByPassword(loginUserDto);
 
     const {accessToken, refreshToken} = this.jwtService.generateToken({
@@ -124,7 +116,15 @@ export class AuthService {
     };
   }
 
-  async refreshAccessToken(refreshToken: string): Promise<string> {
+  public async resetPassword(user: UserEntity): Promise<string> {
+    const newPassword = this.generateRandomPassword();
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.userService.updateUser(user.id, { password: hashedPassword });
+    return newPassword;
+  }
+
+  public async refreshAccessToken(refreshToken: string): Promise<string> {
     const decodedToken = this.jwtService.verifyToken(refreshToken, false);
 
     // Проверка наличия токена в базе данных и не истек ли он
