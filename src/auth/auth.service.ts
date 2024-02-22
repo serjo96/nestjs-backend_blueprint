@@ -4,7 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { UsersService } from '@user/users.service';
 import { EmailService } from '~/email/email.service';
-import { EmailVerificationService } from "~/email/email-verification.service";
+import { VerificationService } from "~/email/verification.service";
 
 import { JWTService } from './jwt.service';
 import { UserWithToken } from './interfaces/user-with-token.interface';
@@ -31,7 +31,7 @@ export class AuthService {
   constructor(
     private readonly userService: UsersService,
     private readonly jwtService: JWTService,
-    private readonly mailService: EmailVerificationService,
+    private readonly mailService: VerificationService,
     private readonly emailService: EmailService,
 
     @InjectRepository(RefreshToken)
@@ -69,8 +69,25 @@ export class AuthService {
     return user;
   }
 
+  public async resetPassword(user: UserEntity): Promise<string> {
+    const newPassword = this.generateRandomPassword();
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-  async comparePassword(attempt: string, dbPassword: string): Promise<boolean> {
+    await this.userService.updateUser(user.id, { password: hashedPassword });
+    return newPassword;
+  }
+
+  private generateRandomPassword(length: number = 12): string {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+=';
+    let result = '';
+    const charactersLength = characters.length;
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+  }
+
+  private async comparePassword(attempt: string, dbPassword: string): Promise<boolean> {
     return await bcrypt.compare(attempt, dbPassword);
   }
 
