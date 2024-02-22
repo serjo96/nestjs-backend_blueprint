@@ -39,7 +39,12 @@ export class JWTService {
     this.expireRefreshUnit = authConfig.jwt_refresh_expire_time_type;
   }
 
-  generateToken({ email, roles, userId }: JwtPayload) {
+  //Generate temporary token with lifetime - 5min
+  public generateTemporaryAuthToken(userId: string) {
+    return this.jwtService.sign({ userId }, { expiresIn: '5m' });
+  }
+
+  public generateToken({ email, roles, userId }: JwtPayload) {
     const payload = { email, roles, userId };
 
     const accessToken: string = this.jwtService.sign(
@@ -67,6 +72,7 @@ export class JWTService {
     };
   }
 
+  //Verify user token with passing token and flag: is accessToken or refreshToken.
   public verifyToken(token: string, isAccessToken: boolean = true): JwtPayload {
     const secret = isAccessToken ? this.accessSecret : this.refreshSecret;
     try {

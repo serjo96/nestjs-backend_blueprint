@@ -6,7 +6,7 @@ import { UsersService } from '@user/users.service';
 import { EmailService } from '~/email/email.service';
 import { VerificationService } from "~/email/verification.service";
 
-import { JWTService } from './jwt.service';
+import {JwtPayload, JWTService} from './jwt.service';
 import { UserWithToken } from './interfaces/user-with-token.interface';
 import { LoginByEmail } from './dto/login.dto';
 import {RefreshToken} from "~/auth/entity/refresh-token.entity";
@@ -83,9 +83,9 @@ export class AuthService {
     return user;
   }
 
-  async register(userDto: CreateUserDto): Promise<UserWithToken> {
+  public async register(userDto: CreateUserDto): Promise<UserWithToken> {
     const user = await this.userService.create(userDto);
-    const token = this.jwtService.generateToken({
+    const token = this.generateUserTokens({
       email: user.email,
       userId: user.id,
       roles: user.roles
@@ -106,7 +106,7 @@ export class AuthService {
   public async login(loginUserDto: LoginByEmail): Promise<UserWithToken> {
     const user = await this.validateUserByPassword(loginUserDto);
 
-    const {accessToken, refreshToken} = this.jwtService.generateToken({
+    const {accessToken, refreshToken} = this.generateUserTokens({
       email: user.email,
       userId: user.id,
       roles: user.roles
@@ -121,12 +121,29 @@ export class AuthService {
     };
   }
 
-  public async resetPassword(user: UserEntity): Promise<string> {
-    const newPassword = this.generateRandomPassword();
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+  public generateUserTokens(payload: JwtPayload) {
+    return this.jwtService.generateToken(payload)
+  }
 
-    await this.userService.updateUser(user.id, { password: hashedPassword });
-    return newPassword;
+  public generateTemporaryToken(userId: string) {
+    return this.jwtService.generateTemporaryAuthToken(userId);
+  }
+
+  public verifyTempToken(token: string) {
+    try {
+      const payload = this.jwtService.verifyToken(token);
+      return payload.userId;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired temporary token.');
+    }
+  }
+
+  public async resetPassword(user: UserEntity): Promise<string> {
+    const password = this.generateRandomPassword();
+
+    //At user entity have orm hook before update where we hash our password
+    await this.userService.updateUser(user.id, { password });
+    return password;
   }
 
   public async refreshAccessToken(refreshToken: string): Promise<string> {

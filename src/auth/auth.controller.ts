@@ -1,4 +1,17 @@
-import {Body, Controller, Get, HttpCode, HttpStatus, Logger, NotFoundException, Param, Post, Redirect} from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+  Redirect,
+  UnauthorizedException
+} from '@nestjs/common';
 import {ApiOkResponse, ApiParam, ApiResponse, ApiTags} from '@nestjs/swagger';
 
 import { BadRequestException } from '~/common/exceptions/bad-request';
@@ -50,6 +63,41 @@ export class AuthController {
     return await this.authService.login(login);
   }
 
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: "If user doesn't exist or invalid token" })
+  @ApiOkResponse({
+    description: 'Return user with tokens at success login.',
+    type: UserWithToken
+  })
+  @Get('/token-login')
+  async loginWithTempToken(@Query('tempToken') tempToken: string): Promise<UserWithToken> {
+    try {
+      const userId = this.authService.verifyTempToken(tempToken);
+      const user = await this.userService.findOne({
+        id: userId
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User not found.');
+      }
+
+      const {accessToken, refreshToken} = this.authService.generateUserTokens({
+        email: user.email,
+        userId: user.id,
+        roles: user.roles
+      });
+      return {
+        user,
+        token: {
+          accessToken,
+          refreshToken
+        }
+      }
+
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired temporary token.');
+    }
+  }
+
   @Get('/forgot-password/:email')
   @ApiOkResponse({
     description: 'Email for reset password',
@@ -90,12 +138,13 @@ export class AuthController {
     const host = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
 
     const newPassword = await this.authService.resetPassword(userEntity)
+    const temporaryToken = this.authService.generateTemporaryToken(userEntity.id)
     await this.verificationService.deleteForgottenPassword({
       token,
     });
     await this.emailService.sendResetPasswordEmail(userEntity.email, newPassword)
     return {
-      url: `${host}/auth/reset-password?changePass=true&token=${token}`
+      url: `${host}/auth/reset-password?changePass=true&token=${temporaryToken}`
     }
   }
 
