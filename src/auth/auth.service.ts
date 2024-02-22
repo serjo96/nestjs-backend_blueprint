@@ -90,7 +90,12 @@ export class AuthService {
       userId: user.id,
       roles: user.roles
     });
-    await this.saveUserToken({user, expiresIn: token.expireDateRefreshToken, refreshToken: token.refreshToken})
+
+    await this.saveUserToken({
+      user,
+      expiresIn: token.expireDateRefreshToken,
+      refreshToken: token.refreshToken
+    })
 
     return {
       user,
@@ -127,7 +132,7 @@ export class AuthService {
   public async refreshAccessToken(refreshToken: string): Promise<string> {
     const decodedToken = this.jwtService.verifyToken(refreshToken, false);
 
-    // Проверка наличия токена в базе данных и не истек ли он
+    // Checking whether the token is in the database and whether it has expired
     const tokenEntity = await this.refreshTokensRepository.findOne({
       where: {
         token: refreshToken
@@ -136,10 +141,10 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token is invalid or expired');
     }
 
-    // Удаление использованного Refresh токена из базы данных
+    // Removing the used Refresh token from the database
     await this.deleteToken(refreshToken);
 
-    // Генерация нового Access токена
+    // Generating a new Access token
     return this.jwtService.generateToken(decodedToken).accessToken;;
   }
 }
