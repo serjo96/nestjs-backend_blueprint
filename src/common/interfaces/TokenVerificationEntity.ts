@@ -1,4 +1,4 @@
-interface TokenVerificationEntity {
+export interface TokenVerificationEntity {
   token: string;
   expirationDate: Date;
   attempts: number;

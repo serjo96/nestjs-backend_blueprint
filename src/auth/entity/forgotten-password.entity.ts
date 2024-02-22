@@ -1,6 +1,7 @@
 import { UserEntity } from '~/users/users.entity';
 import { Column, Entity, JoinColumn, OneToOne, Relation } from 'typeorm';
 import {BaseEntity} from "~/common/base-entity";
+import {TokenVerificationEntity} from "~/common/interfaces/TokenVerificationEntity";
 
 
 @Entity('forgotten-password')

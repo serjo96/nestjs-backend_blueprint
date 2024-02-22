@@ -1,6 +1,7 @@
 import {Column, Entity, JoinColumn, OneToOne, Relation} from 'typeorm';
 import { BaseEntity } from '~/common/base-entity';
 import {UserEntity} from "@user/users.entity";
+import {TokenVerificationEntity} from "~/common/interfaces/TokenVerificationEntity";
 
 @Entity('email-verification')
 export class EmailVerificationEntity extends BaseEntity implements TokenVerificationEntity {
