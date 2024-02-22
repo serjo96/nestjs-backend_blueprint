@@ -20,24 +20,32 @@ export class UsersService {
   ) {}
 
   public findAll(where: FindManyOptions<UserEntity>): Promise<UserEntity[]> {
-    return this.userRepository.find(where);
+    return this.userRepository.find(where).catch(err => {
+      throw new DatabaseError(err.message);
+    });
   }
 
   public findOne(where: FindOptionsWhere<UserEntity>): Promise<UserEntity | undefined> {
     return this.userRepository.findOne({
       where,
       order: { id: 'desc' },
+    }).catch(err => {
+      throw new DatabaseError(err.message);
     });
   }
 
   public async findById(id: string, opts?: FindOneOptions<UserEntity>): Promise<UserEntity | null> {
-    return await this.userRepository.findOneOrFail({ where: { id }, ...opts });
+    return await this.userRepository.findOneOrFail({ where: { id }, ...opts }).catch(err => {
+      throw new DatabaseError(err.message);
+    });
   }
 
   public async findByEmail(userEmail: string, relations?: FindOptionsRelations<UserEntity>): Promise<UserEntity | null> {
     return await this.userRepository.findOne({
       where: { email: userEmail },
       relations,
+    }).catch(err => {
+      throw new DatabaseError(err.message);
     });
   }
 
