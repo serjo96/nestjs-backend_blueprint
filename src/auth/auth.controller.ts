@@ -143,7 +143,7 @@ export class AuthController {
     });
     await this.emailService.sendResetPasswordEmail(userEntity.email, newPassword)
     return {
-      url: `${host}/login?changePass=true&token=${temporaryToken}`
+      url: `${host}/login?&token=${temporaryToken}`
     }
   }
 
