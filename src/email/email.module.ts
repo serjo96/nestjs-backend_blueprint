@@ -2,21 +2,16 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { Module } from '@nestjs/common'
 import {ConfigModule, ConfigService} from "@nestjs/config";
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
 
 import { UsersModule } from '@user/users.module';
-import { VerificationService } from '~/email/verification.service';
 
 import { EmailService } from './email.service';
-import {ForgottenPasswordEntity} from "~/auth/entity/forgotten-password.entity";
-import { EmailVerificationEntity } from './email-verification.entity';
 import {SmtpConfig} from "~/config/smtp.config";
 import {ConfigEnum} from "~/config/main-config";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([EmailVerificationEntity, ForgottenPasswordEntity]),
     UsersModule,
     MailerModule.forRootAsync({
       imports: [ConfigModule],
@@ -51,7 +46,7 @@ import {ConfigEnum} from "~/config/main-config";
       },
     }),
   ],
-  providers: [EmailService, VerificationService],
-  exports: [EmailService, VerificationService, TypeOrmModule],
+  providers: [EmailService],
+  exports: [EmailService],
 })
 export class EmailModule {}

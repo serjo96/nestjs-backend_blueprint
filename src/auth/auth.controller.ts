@@ -14,10 +14,7 @@ import {
 } from '@nestjs/common';
 import {ApiOkResponse, ApiParam, ApiResponse, ApiTags} from '@nestjs/swagger';
 
-import { BadRequestException } from '~/common/exceptions/bad-request';
-
 import { EmailService } from '~/email/email.service';
-import { VerificationService } from "~/email/verification.service";
 import { AuthService } from './auth.service';
 
 import { CreateUserDto } from '@user/dto/create-user.dto';
@@ -26,6 +23,8 @@ import { UserWithToken } from './interfaces/user-with-token.interface';
 import {ConfigService} from "@nestjs/config";
 import {ConfigEnum, ProjectConfig} from "~/config/main-config";
 import {UsersService} from "@user/users.service";
+import { TokenValidationErrorDto } from '~/common/dto/TokenValidationErrorDto';
+import {VerificationService} from "~/auth/verification.service";
 
 @ApiTags('auth')
 @Controller('/auth')

@@ -1,4 +1,3 @@
-import { EmailVerificationEntity } from './email-verification.entity';
 
 export class EmailServiceMock {
   findAll(where: any): any[] {

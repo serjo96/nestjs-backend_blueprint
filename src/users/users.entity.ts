@@ -3,9 +3,9 @@ import {BeforeInsert, BeforeUpdate, Column, Entity, Index, OneToMany, OneToOne} 
 
 import {BaseEntity} from '~/common/base-entity';
 import {Profile} from './profiles.entity';
-import {ForgottenPasswordEntity} from "~/auth/entity/forgotten-password.entity";
-import {RefreshToken} from "~/auth/entity/refresh-token.entity";
-import {EmailVerificationEntity} from "~/email/email-verification.entity";
+import {ForgottenPasswordEntity} from "~/auth/entities/forgotten-password.entity";
+import {RefreshToken} from "~/auth/entities/refresh-token.entity";
+import {EmailVerificationEntity} from "~/auth/entities/email-verification.entity";
 
 export enum RolesEnum {
   GUEST = 'guest',

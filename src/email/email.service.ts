@@ -1,13 +1,12 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { ISendMailOptions } from '@nestjs-modules/mailer/dist/interfaces/send-mail-options.interface';
-import { Inject, Injectable, forwardRef } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { join } from 'path';
 import { SentMessageInfo } from 'nodemailer';
 import {ConfigService} from "@nestjs/config";
 
 import { UsersService } from '@user/users.service';
 
-import { VerificationService } from "~/email/verification.service";
 import {ConfigEnum, ProjectConfig} from "~/config/main-config";
 import {SmtpConfig} from "~/config/smtp.config";
 import {EmailServiceException} from "~/common/exceptions/email-service-exception";
@@ -18,9 +17,6 @@ export class EmailService {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     private readonly mailerService: MailerService,
-
-    @Inject(forwardRef(() => VerificationService))
-    private readonly verificationService: VerificationService
   ) {}
 
   public async sendEmail(mailOptions: ISendMailOptions): Promise<SentMessageInfo> {

@@ -9,13 +9,13 @@ import { UsersService } from '@user/users.service';
 import { EmailService } from '~/email/email.service';
 import { GetRepositoryMethodsArgs } from '~/utils/typeUtils/getRepositoryMethodsArgs';
 
-import { EmailVerificationEntity } from './email-verification.entity';
-import {ForgottenPasswordEntity} from "~/auth/entity/forgotten-password.entity";
+import {ForgottenPasswordEntity} from "~/auth/entities/forgotten-password.entity";
 import {DatabaseError} from "~/common/exceptions/DatabaseError";
 import {EncryptionService} from "~/auth/EncryptionService";
 import {UserEntity} from "@user/users.entity";
 import {FindOptionsWhere} from "typeorm/find-options/FindOptionsWhere";
 import {RateLimitException} from "~/common/exceptions/RateLimitException";
+import {EmailVerificationEntity} from "~/auth/entities/email-verification.entity";
 
 @Injectable()
 export class VerificationService {

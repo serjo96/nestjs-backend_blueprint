@@ -4,16 +4,16 @@ import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { UsersService } from '@user/users.service';
 import { EmailService } from '~/email/email.service';
-import { VerificationService } from "~/email/verification.service";
 
 import {JwtPayload, JWTService} from './jwt.service';
 import { UserWithToken } from './interfaces/user-with-token.interface';
 import { LoginByEmail } from './dto/login.dto';
-import {RefreshToken} from "~/auth/entity/refresh-token.entity";
+import {RefreshToken} from "~/auth/entities/refresh-token.entity";
 import {UserEntity} from "@user/users.entity";
 import {InjectRepository} from "@nestjs/typeorm";
 import {Repository} from "typeorm";
 import {DatabaseError} from "~/common/exceptions/DatabaseError";
+import {VerificationService} from "~/auth/verification.service";
 
 export interface ValidateUserByPasswordPayload {
   email: string;
@@ -141,7 +141,7 @@ export class AuthService {
   public async resetPassword(user: UserEntity): Promise<string> {
     const password = this.generateRandomPassword();
 
-    //At user entity have orm hook before update where we hash our password
+    //At user entities have orm hook before update where we hash our password
     await this.userService.updateUser(user.id, { password });
     return password;
   }
