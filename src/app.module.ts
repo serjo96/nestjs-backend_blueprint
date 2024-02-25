@@ -21,7 +21,6 @@ import {validationSchema} from "~/config/validation";
       isGlobal: true,
       validationSchema,
     }),
-    LoggerModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
