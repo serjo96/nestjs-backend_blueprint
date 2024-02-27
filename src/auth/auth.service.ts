@@ -146,7 +146,7 @@ export class AuthService {
     return password;
   }
 
-  public async refreshAccessToken(refreshToken: string): Promise<string> {
+  public async refreshAccessToken(refreshToken: string) {
     const decodedToken = this.jwtService.verifyToken(refreshToken, false);
 
     // Checking whether the token is in the database and whether it has expired
@@ -162,6 +162,6 @@ export class AuthService {
     await this.deleteToken(refreshToken);
 
     // Generating a new Access token
-    return this.jwtService.generateToken(decodedToken).accessToken;;
+    return this.jwtService.generateToken(decodedToken).accessToken;
   }
 }

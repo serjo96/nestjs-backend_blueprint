@@ -53,7 +53,7 @@
 #      - name: Checkout deploy repo
 #        uses: actions/checkout@v3
 #        with:
-#          repository: cue-cue/deploy
+#          repository:
 #          token: ${{ secrets.LUVS_GH_PAT }}
 #          path: deploy
 #
