@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Put, Req, UseGuards, UseInterceptors, UsePipes, HttpStatus } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import {ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiOkResponse} from '@nestjs/swagger';
 import { EditUserDto } from '@user/dto/edit-user.dto';
 import { UserResponseDto } from '@user/dto/user-response.dto';
 import { Request } from 'express';
@@ -14,6 +14,7 @@ import {TransformInterceptor} from "~/common/interceptors/TransformInterceptor";
 import {BadRequestException} from "~/common/exceptions/bad-request";
 import {Roles} from "~/common/decorators/roles";
 import {ValidationPipe} from "~/common/Pipes/validation.pipe";
+import {UserDto} from "@user/dto/user.dto";
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -39,6 +40,11 @@ export class UsersController {
 
   @Get('/current')
   @Roles(RolesEnum.USER, RolesEnum.ADMIN)
+  @ApiParam({ name: 'id', required: true, description: 'ID of the user' })
+  @ApiOkResponse({
+    description: 'Return current authorized user.',
+    type: UserDto
+  })
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
   async profile(@Req() req: Request): Promise<any> {
     const { user } = req;
@@ -47,6 +53,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @ApiParam({ name: 'id', required: true, description: 'ID of the user' })
   @Roles(RolesEnum.ADMIN)
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
@@ -65,14 +72,15 @@ export class UsersController {
   }
 
   @Put(':id')
+  @ApiParam({ name: 'id', required: true, description: 'ID of the user' })
   @ApiOperation({
     operationId: 'Edit user by id',
     summary: 'Receive id of user with payload and edit him.',
     description: 'Receive id of user with payload for edit, check exist user if not return exception, if ok find user by id and edit him.'
   })
-  @ApiResponse({
-    status: HttpStatus.OK,
+  @ApiOkResponse({
     description: 'Return edited user',
+    type: UserEntity,
   })
   @ApiBody({
     type: EditUserDto,
