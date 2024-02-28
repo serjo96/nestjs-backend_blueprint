@@ -71,19 +71,18 @@ export class AuthService {
     // find if user exist with this email
     const user = await this.userService.findByEmail(email);
     if (!user) {
-      throw new BadRequestException({ message: `User doesn't exist` });
+      throw new BadRequestException('Invalid email or password.');
     }
 
-    // find if user password match
-    const match = await this.comparePassword(password, user.password);
-    if (!match) {
-      throw new UnauthorizedException();
+    const isPasswordMatching = await bcrypt.compare(password, user.password);
+    if (!isPasswordMatching) {
+      throw new BadRequestException('Invalid email or password.');
     }
 
     return user;
   }
 
-  public async register(userDto: CreateUserDto): Promise<UserWithToken> {
+  public async register(userDto: CreateUserDto) {
     const user = await this.userService.create(userDto);
     const token = this.generateUserTokens({
       email: user.email,
