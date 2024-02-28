@@ -14,5 +14,5 @@ export class EditUserDto {
   // @Transform((status) => enumTansform(status, RolesEnum))
   @IsEnum(RolesEnum)
   @IsOptional()
-  roles: RolesEnum;
+  roles?: RolesEnum;
 }
