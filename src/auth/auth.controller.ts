@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  HttpCode,
   HttpStatus,
   Logger,
   NotFoundException,
@@ -12,19 +11,20 @@ import {
   Redirect,
   UnauthorizedException
 } from '@nestjs/common';
-import {ApiOkResponse, ApiParam, ApiResponse, ApiTags} from '@nestjs/swagger';
+import {ApiBody, ApiOkResponse, ApiParam, ApiResponse, ApiTags} from '@nestjs/swagger';
 
 import { EmailService } from '~/email/email.service';
 import { AuthService } from './auth.service';
 
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { LoginByEmail } from './dto/login.dto';
-import { UserWithToken } from './interfaces/user-with-token.interface';
 import {ConfigService} from "@nestjs/config";
 import {ConfigEnum, ProjectConfig} from "~/config/main-config";
 import {UsersService} from "@user/users.service";
 import { TokenValidationErrorDto } from '~/common/dto/TokenValidationErrorDto';
 import {VerificationService} from "~/auth/verification.service";
+import {RefreshTokenDto} from "~/auth/dto/refresh-token.dto";
+import {TokensResponse, UserWithToken} from "~/auth/dto/tokens.dto";
 
 @ApiTags('auth')
 @Controller('/auth')
@@ -38,7 +38,6 @@ export class AuthController {
   ) {}
 
   @Post('/sign-up')
-  @HttpCode(HttpStatus.OK)
   @ApiOkResponse({
     description: 'A user has been successfully registration',
     type: UserWithToken,
@@ -56,8 +55,11 @@ export class AuthController {
 
   @Post('/login')
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
+  @ApiOkResponse({
+    description: 'Return user with tokens at success login.',
+    type: UserWithToken
+  })
   @ApiParam(LoginByEmail)
-  @HttpCode(HttpStatus.OK)
   public async login(@Body() login: LoginByEmail) {
     return await this.authService.login(login);
   }
@@ -68,7 +70,7 @@ export class AuthController {
     type: UserWithToken
   })
   @Get('/token-login')
-  async loginWithTempToken(@Query('tempToken') tempToken: string): Promise<UserWithToken> {
+  public async loginWithTempToken(@Query('tempToken') tempToken: string): Promise<UserWithToken> {
     try {
       const userId = this.authService.verifyTempToken(tempToken);
       const user = await this.userService.findOne({
@@ -97,10 +99,27 @@ export class AuthController {
     }
   }
 
+  @Post('/refresh-token')
+  @ApiBody({ type: RefreshTokenDto })
+  @ApiResponse({
+    status: 200,
+    description: 'The access token has been refreshed successfully',
+    type: TokensResponse
+  })
+  @ApiResponse({ status: 400, description: 'Invalid refresh token' })
+  public async refresh(@Body('refreshToken') refreshToken: string): Promise<{ accessToken: string, refreshToken: string }> {
+    const tokenData = await this.authService.refreshAccessToken(refreshToken);
+    return {
+      accessToken: tokenData.accessToken,
+      refreshToken: tokenData.refreshToken
+    };
+  }
+
   @Get('/forgot-password/:email')
+  @ApiParam({ name: 'email', required: true, description: 'User email for reset password' })
   @ApiOkResponse({
-    description: 'Email for reset password',
-    type: 'string',
+    description: 'Returns ok iff operation is success.',
+    type: String,
   })
   @ApiResponse({
     description: 'Returns unix time before unlock attempt, if email sent recently',
@@ -122,15 +141,12 @@ export class AuthController {
 
     await this.emailService.sendEmailForgotPassword(email, forgottenPasswordEntity.token);
     await this.verificationService.saveForgottenPasswordToken(forgottenPasswordEntity)
+
+    return 'ok'
   }
 
   @Get('/reset-password/:token')
-  @HttpCode(HttpStatus.FOUND)
-  @ApiParam({
-    name: 'Token',
-    description: 'Token for reset password',
-    type: 'string',
-  })
+  @ApiParam({ name: 'token', required: true, description: 'Token for reset password' })
   @Redirect()
   public async resetPassword(@Param() { token }: { token: string }) {
     const userEntity = await this.verificationService.verifyForgotPasswordToken(token)
@@ -181,7 +197,6 @@ export class AuthController {
   }
 
   @Get('/confirm/:token')
-  @HttpCode(HttpStatus.OK)
   @ApiParam({
     name: 'token',
     description: 'Token for confirm registration',

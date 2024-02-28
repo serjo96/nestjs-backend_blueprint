@@ -6,7 +6,6 @@ import { UsersService } from '@user/users.service';
 import { EmailService } from '~/email/email.service';
 
 import {JwtPayload, JWTService} from './jwt.service';
-import { UserWithToken } from './interfaces/user-with-token.interface';
 import { LoginByEmail } from './dto/login.dto';
 import {RefreshToken} from "~/auth/entities/refresh-token.entity";
 import {UserEntity} from "@user/users.entity";
@@ -14,6 +13,7 @@ import {InjectRepository} from "@nestjs/typeorm";
 import {Repository} from "typeorm";
 import {DatabaseError} from "~/common/exceptions/DatabaseError";
 import {VerificationService} from "~/auth/verification.service";
+import {UserWithToken} from "~/auth/dto/tokens.dto";
 
 export interface ValidateUserByPasswordPayload {
   email: string;
@@ -162,6 +162,6 @@ export class AuthService {
     await this.deleteToken(refreshToken);
 
     // Generating a new Access token
-    return this.jwtService.generateToken(decodedToken).accessToken;
+    return this.jwtService.generateToken(decodedToken);
   }
 }
