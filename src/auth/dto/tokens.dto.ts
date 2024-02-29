@@ -1,5 +1,6 @@
 import {UserEntity} from "@user/users.entity";
 import {IsString} from "class-validator";
+import {UserDto} from "@user/dto/user.dto";
 
 export class TokensResponse {
   @IsString()
@@ -10,6 +11,6 @@ export class TokensResponse {
 }
 
 export class UserWithToken {
-  user: UserEntity;
+  user: UserDto;
   token: TokensResponse;
 }

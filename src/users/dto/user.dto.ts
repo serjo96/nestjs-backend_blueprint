@@ -3,10 +3,16 @@ import {IsEmail, IsNotEmpty, IsEnum, IsString, MinLength, ValidateNested, IsOpti
 import {Exclude, Expose, Type} from 'class-transformer';
 import {RolesEnum} from "@user/users.entity";
 import {ProfileDto} from "@user/dto/profile.dto";
-import {ForgottenPasswordDto} from "~/auth/dto/ForgottenPasswordDto";
+import {ForgottenPasswordDto} from "~/auth/dto/forgottent-password.dto";
 
 @Exclude()
 export class UserDto {
+
+  @ApiProperty()
+  @Expose()
+  id: string;
+
+
   @ApiProperty()
   @Expose()
   @IsEmail()
@@ -44,15 +50,4 @@ export class UserDto {
   @IsOptional()
   profile?: ProfileDto;
 
-
-  @ApiProperty({
-    type: () => ForgottenPasswordDto,
-    description: 'Password recovery information',
-    required: false
-  })
-  @Expose()
-  @ValidateNested()
-  @Type(() => ForgottenPasswordDto)
-  @IsOptional()
-  forgottenPassword?: ForgottenPasswordDto;
 }
