@@ -142,7 +142,8 @@ export class VerificationService {
       token: emailToken,
       expirationDate,
       attempts: 1,
-      lastAttemptDate: newTimestamp
+      lastAttemptDate: newTimestamp,
+      user: user
     };
 
     return this.forgottenPasswordRepository.create(tokenPayload);
