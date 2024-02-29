@@ -1,6 +1,6 @@
 import {
   Body,
-  Controller,
+  Controller, Delete,
   Get,
   HttpStatus,
   Logger,
@@ -25,6 +25,7 @@ import { TokenValidationErrorDto } from '~/common/dto/TokenValidationErrorDto';
 import {VerificationService} from "~/auth/verification.service";
 import {RefreshTokenDto} from "~/auth/dto/refresh-token.dto";
 import {TokensResponse, UserWithToken} from "~/auth/dto/tokens.dto";
+import {ErrorValidationDto} from "~/common/dto/error-validation.dto";
 
 @ApiTags('auth')
 @Controller('/auth')
@@ -42,8 +43,11 @@ export class AuthController {
     description: 'A user has been successfully registration',
     type: UserWithToken,
   })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Returns bad request if password is to week or email not pass, or if user already exist.',
+    type: ErrorValidationDto
+  })
   public async register(@Body() createUserDto: CreateUserDto): Promise<UserWithToken> {
     const userData = await this.authService.register(createUserDto);
 
@@ -59,7 +63,9 @@ export class AuthController {
     description: 'Return user with tokens at success login.',
     type: UserWithToken
   })
-  @ApiParam(LoginByEmail)
+  @ApiBody({
+    type: LoginByEmail
+  })
   public async login(@Body() login: LoginByEmail) {
     return await this.authService.login(login);
   }
@@ -113,6 +119,13 @@ export class AuthController {
       accessToken: tokenData.accessToken,
       refreshToken: tokenData.refreshToken
     };
+  }
+
+  @ApiBody({ type: RefreshTokenDto })
+  @Delete('/logout')
+  public async logout(@Body('refreshToken') refreshToken: string) {
+    await this.authService.logout(refreshToken);
+    return true;
   }
 
   @Get('/forgot-password/:email')
