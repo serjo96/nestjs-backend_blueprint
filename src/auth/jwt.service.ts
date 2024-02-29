@@ -90,6 +90,4 @@ export class JWTService {
       throw new UnauthorizedException('Invalid token payload');
     }
   }
-
-
 }
