@@ -119,7 +119,8 @@ export class AuthService {
     const {accessToken, refreshToken, expireDateRefreshToken} = this.generateUserTokens({
       email: user.email,
       userId: user.id,
-      roles: user.roles
+      roles: user.roles,
+      rememberMe: loginUserDto.rememberMe
     });
 
     await this.saveUserToken({

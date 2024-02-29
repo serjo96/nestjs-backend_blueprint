@@ -1,9 +1,9 @@
 import {Injectable, UnauthorizedException} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-
 import {ConfigService} from "@nestjs/config";
-import {AuthConfig, UnionExpireType} from "~/config/auth.config";
 import dayjs, {ManipulateType} from "dayjs";
+
+import {AuthConfig, UnionExpireType} from "~/config/auth.config";
 import {ConfigEnum} from "~/config/main-config";
 import {RolesEnum} from "@user/users.entity";
 
@@ -11,6 +11,7 @@ export interface JwtPayload {
   email: string;
   roles: RolesEnum;
   userId: string;
+  rememberMe?: boolean;
 }
 @Injectable()
 export class JWTService {
@@ -20,7 +21,6 @@ export class JWTService {
   private readonly expireUnit: UnionExpireType;
 
   private readonly refreshSecret: string;
-  private readonly refreshExpiresIn: string;
   private readonly expireRefreshValue: number;
   private readonly expireRefreshUnit: UnionExpireType;
   constructor(
@@ -34,7 +34,6 @@ export class JWTService {
     this.expireUnit = authConfig.jwt_expire_time_type;
 
     this.refreshSecret = authConfig.jwt_refresh_secret_key;
-    this.refreshExpiresIn = `${authConfig.jwt_refresh_expire_time_value}${authConfig.jwt_refresh_expire_time_type}`;
     this.expireRefreshValue = +authConfig.jwt_refresh_expire_time_value;
     this.expireRefreshUnit = authConfig.jwt_refresh_expire_time_type;
   }
@@ -44,8 +43,9 @@ export class JWTService {
     return this.jwtService.sign({ userId }, { expiresIn: '5m' });
   }
 
-  public generateToken({ email, roles, userId }: JwtPayload) {
+  public generateToken({ email, roles, userId, rememberMe }: JwtPayload) {
     const payload = { email, roles, userId };
+    const expireRefreshTokenTime = this.setRefreshTokenExpireTime(rememberMe);
 
     const accessToken: string = this.jwtService.sign(
       payload,
@@ -59,7 +59,7 @@ export class JWTService {
       payload,
       {
         secret: this.accessSecret,
-        expiresIn: this.accessExpiresIn,
+        expiresIn: expireRefreshTokenTime,
       },
     )
 
@@ -89,5 +89,13 @@ export class JWTService {
     } else {
       throw new UnauthorizedException('Invalid token payload');
     }
+  }
+
+  // if paas rememberMe, add one year lifetime for refreshToken
+  private setRefreshTokenExpireTime(rememberMe?: boolean) {
+    const expiredValue = rememberMe ? 365 : this.expireRefreshValue;
+    const expiredUnits = rememberMe ? 'd' : this.expireRefreshUnit;
+
+    return `${expiredValue}${expiredUnits}`
   }
 }
