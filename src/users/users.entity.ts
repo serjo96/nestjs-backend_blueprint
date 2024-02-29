@@ -6,6 +6,8 @@ import {Profile} from './profiles.entity';
 import {ForgottenPasswordEntity} from "~/auth/entities/forgotten-password.entity";
 import {RefreshToken} from "~/auth/entities/refresh-token.entity";
 import {EmailVerificationEntity} from "~/auth/entities/email-verification.entity";
+import {Exclude} from "class-transformer";
+import {ApiHideProperty} from "@nestjs/swagger";
 
 export enum RolesEnum {
   GUEST = 'guest',
@@ -64,12 +66,18 @@ export class UserEntity extends BaseEntity {
   })
   public profile: Profile;
 
+  @ApiHideProperty()
+  @Exclude()
   @OneToOne(() => ForgottenPasswordEntity, (ForgottenPassword) => ForgottenPassword.user)
   public forgottenPassword: ForgottenPasswordEntity;
 
+  @ApiHideProperty()
+  @Exclude()
   @OneToOne(() => EmailVerificationEntity, (emailVerification) => emailVerification.user)
   public emailVerification: EmailVerificationEntity;
 
+  @ApiHideProperty()
+  @Exclude()
   @OneToMany(() => RefreshToken, refreshToken => refreshToken.user)
   public refreshTokens: RefreshToken[];
 }
