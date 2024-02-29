@@ -50,7 +50,18 @@ export class AuthService {
   }
 
   private deleteToken(refreshToken: string) {
-    return this.refreshTokensRepository.delete({token: refreshToken})
+    return this.refreshTokensRepository.delete({token: refreshToken}).catch(err => {
+      throw new DatabaseError(err.message);
+    })
+  }
+  private findToken(refreshToken: string) {
+    return this.refreshTokensRepository.findOne({
+      where: {
+        token: refreshToken
+      }
+    }).catch(err => {
+      throw new DatabaseError(err.message);
+    })
   }
 
   private generateRandomPassword(length: number = 12): string {
@@ -105,11 +116,17 @@ export class AuthService {
   public async login(loginUserDto: LoginByEmail): Promise<UserWithToken> {
     const user = await this.validateUserByPassword(loginUserDto);
 
-    const {accessToken, refreshToken} = this.generateUserTokens({
+    const {accessToken, refreshToken, expireDateRefreshToken} = this.generateUserTokens({
       email: user.email,
       userId: user.id,
       roles: user.roles
     });
+
+    await this.saveUserToken({
+      user,
+      expiresIn: expireDateRefreshToken,
+      refreshToken
+    })
 
     return {
       user: user,
@@ -118,6 +135,15 @@ export class AuthService {
         refreshToken
       },
     };
+  }
+
+  public async logout(refreshToken: string) {
+    const token = await this.findToken(refreshToken)
+    if (token) {
+      // Removing the refresh token from the database
+      return await this.deleteToken(refreshToken);
+    }
+    throw new BadRequestException('Token does not exist.')
   }
 
   public generateUserTokens(payload: JwtPayload) {
