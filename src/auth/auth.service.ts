@@ -94,6 +94,14 @@ export class AuthService {
   }
 
   public async register(userDto: CreateUserDto) {
+    const userInDb = await this.userService.findByEmail(userDto.email).catch(err => {
+      throw new DatabaseError(err.message);
+    });
+
+    if (userInDb) {
+      throw new BadRequestException('User already exists');
+    }
+
     const user = await this.userService.create(userDto);
     const token = this.generateUserTokens({
       email: user.email,

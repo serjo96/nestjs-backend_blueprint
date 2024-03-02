@@ -45,21 +45,9 @@ export class UsersService {
   }
 
   async create(userDto: Partial<CreateUserDto>): Promise<UserEntity | undefined> {
-    const { password, email } = userDto;
-
-    const userInDb = await this.userRepository.findOne({
-      where: { email },
-    }).catch(err => {
-      throw new DatabaseError(err.message);
-    });
-
-    if (userInDb) {
-      throw new BadRequestException('User already exists');
-    }
-
     const user: UserEntity = await this.userRepository.create({
-      password,
-      email,
+      ...userDto,
+      lastActiveAt: new Date()
     });
     await this.userRepository.save(user).catch(err => {
       throw new DatabaseError(err.message);
@@ -83,5 +71,9 @@ export class UsersService {
 
   async removeUser(id: string) {
     return await this.userRepository.softDelete({ id });
+  }
+
+  public async setUserLastActivity(userId: string) {
+    return await this.userRepository.update(userId, {lastActiveAt: new Date()})
   }
 }
