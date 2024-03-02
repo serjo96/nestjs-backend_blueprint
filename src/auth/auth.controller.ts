@@ -26,6 +26,7 @@ import {VerificationService} from "~/auth/verification.service";
 import {RefreshTokenDto} from "~/auth/dto/refresh-token.dto";
 import {TokensResponse, UserWithToken} from "~/auth/dto/tokens.dto";
 import {ErrorValidationDto} from "~/common/dto/error-validation.dto";
+import {RedirectException} from "~/common/exceptions/RedirectException";
 
 @ApiTags('auth')
 @Controller('/auth')
@@ -162,17 +163,21 @@ export class AuthController {
   @ApiParam({ name: 'token', required: true, description: 'Token for reset password' })
   @Redirect()
   public async resetPassword(@Param() { token }: { token: string }) {
-    const userEntity = await this.verificationService.verifyForgotPasswordToken(token)
     const host = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
+    try {
+      const userEntity = await this.verificationService.verifyForgotPasswordToken(token)
 
-    const newPassword = await this.authService.resetPassword(userEntity)
-    const temporaryToken = this.authService.generateTemporaryToken(userEntity.id)
-    await this.verificationService.deleteForgottenPassword({
-      token,
-    });
-    await this.emailService.sendResetPasswordEmail(userEntity.email, newPassword)
-    return {
-      url: `${host}/login?&token=${temporaryToken}`
+      const newPassword = await this.authService.resetPassword(userEntity)
+      const temporaryToken = this.authService.generateTemporaryToken(userEntity.id)
+      await this.verificationService.deleteForgottenPassword({
+        token,
+      });
+      await this.emailService.sendResetPasswordEmail(userEntity.email, newPassword)
+      return {
+        url: `${host}/login?&token=${temporaryToken}`
+      }
+    } catch (error) {
+      throw new RedirectException(`${host}/error`, error)
     }
   }
 
@@ -223,16 +228,15 @@ export class AuthController {
   public async confirmRegistration(
     @Param() { token }: { token: string },
   ) {
-    let redirectUrl = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
+    let redirectLink = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
     const logger = new Logger(AuthController.name);
 
     try {
       const userEmail = await this.verificationService.verifyConfirmToken(token);
       await this.emailService.sendSuccessRegistrationEmail(userEmail);
+      return {url: redirectLink}
     } catch (error) {
-      logger.error(`Error during email confirmation: ${error.message}`, error.stack);
-      redirectUrl += '/resend-conformation'
+      throw new RedirectException(`${redirectLink}/error`, error)
     }
-    return {url: redirectUrl}
   }
 }
