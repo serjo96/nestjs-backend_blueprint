@@ -177,7 +177,7 @@ export class AuthController {
         url: `${host}/login?&token=${temporaryToken}`
       }
     } catch (error) {
-      throw new RedirectException(`${host}/error`, error)
+      throw new RedirectException(error, `${host}/error`)
     }
   }
 
@@ -236,7 +236,7 @@ export class AuthController {
       await this.emailService.sendSuccessRegistrationEmail(userEmail);
       return {url: redirectLink}
     } catch (error) {
-      throw new RedirectException(`${redirectLink}/error`, error)
+      throw new RedirectException(error, `${redirectLink}/error`)
     }
   }
 }

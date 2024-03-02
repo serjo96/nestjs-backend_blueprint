@@ -49,7 +49,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       responseData.statusCode = exception.getStatus();
       responseData.message = exception.message;
       responseData.payload = { unlockTime: exception.unlockTime };
-    }  else if (exception instanceof RedirectException) {
+    } else if (exception instanceof RedirectException) {
       responseData.statusCode = exception.getStatus();
       responseData.message = exception.message;
       logger.error(exception, exception.stack, errorPayload)
