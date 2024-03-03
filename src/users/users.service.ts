@@ -69,12 +69,22 @@ export class UsersService {
     return this.userRepository.update(id, payload)
   }
 
-  async removeUser(id: string) {
+  private async removeUser(id: string) {
     return await this.userRepository.softDelete({ id });
   }
 
   public async setUserLastActivity(userId: string) {
     return await this.userRepository.update(userId, {lastActiveAt: new Date()})
+  }
+
+  public async deleteUser(userId: string, currentUserId: string) {
+    if (currentUserId === userId) {
+      throw new BadRequestException({
+        message: "You can't delete yourself",
+      });
+    }
+    await this.removeUser(userId);
+    return await this.findOne({id: userId}, { withDeleted: true });
   }
 
   public async findVerifiedUserByEmail(email: string): Promise<UserEntity> {

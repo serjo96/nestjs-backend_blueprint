@@ -35,7 +35,7 @@ export class UsersController {
   @Roles(RolesEnum.ADMIN)
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
   getAllUsers(): Promise<UserEntity[]> {
-    return this.usersService.findAll({});;
+    return this.usersService.findAll({});
   }
 
   @Get('/current')
@@ -59,16 +59,7 @@ export class UsersController {
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
   async removeUser(@Param() { id }: { id: string }, @Req() req: Request): Promise<UserEntity> {
     const { user } = req;
-    let deletedUser;
-    if (user.id === id) {
-      throw new BadRequestException({
-        message: "You can't delete yourself",
-      });
-    }
-    await this.usersService.removeUser(id);
-    deletedUser = await this.usersService.findOne({id}, { withDeleted: true });
-
-    return deletedUser;
+    return this.usersService.deleteUser(id, user.id);
   }
 
   @Put(':id')
