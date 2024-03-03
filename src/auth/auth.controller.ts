@@ -68,7 +68,11 @@ export class AuthController {
     type: LoginByEmail
   })
   public async login(@Body() login: LoginByEmail) {
-    return await this.authService.login(login);
+    const loginResult = await this.authService.login(login);
+
+    //logging user activity
+    await this.userService.setUserLastActivity(loginResult.user.id)
+    return loginResult;
   }
 
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: "If user doesn't exist or invalid token" })
@@ -93,6 +97,10 @@ export class AuthController {
         userId: user.id,
         roles: user.roles
       });
+
+
+      //logging user activity
+      await this.userService.setUserLastActivity(user.id)
       return {
         user,
         token: {
@@ -140,7 +148,7 @@ export class AuthController {
     status: HttpStatus.TOO_MANY_REQUESTS,
     type: TokenValidationErrorDto
   })
-  public async sendEmailForgotPassword(@Param() { email }: { email: string }) {
+  public async requestPasswordReset(@Param() { email }: { email: string }) {
     const user = await this.userService.findByEmail(email, { forgottenPassword: true });
     let forgottenPasswordEntity = null;
     if (!user) {
@@ -166,9 +174,9 @@ export class AuthController {
     const host = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
     try {
       const userEntity = await this.verificationService.verifyForgotPasswordToken(token)
-
       const newPassword = await this.authService.resetPassword(userEntity)
       const temporaryToken = this.authService.generateTemporaryToken(userEntity.id)
+
       await this.verificationService.deleteForgottenPassword({
         token,
       });
@@ -196,18 +204,8 @@ export class AuthController {
     type: TokenValidationErrorDto
   })
   public async sendEmailVerification(@Param() { email }: { email: string }) {
-    const user = await this.userService.findByEmail(email, { emailVerification: true });
-    let verificationEntity = null;
-    if (!user) {
-      throw new NotFoundException(`User doesn't exist`);
-    }
-
-    if(!user.forgottenPassword) {
-      verificationEntity = await this.verificationService.createVerificationToken(user)
-    } else {
-      verificationEntity = this.verificationService.validateToken(user.forgottenPassword);
-      await this.verificationService.deleteEmailVerification(user.emailVerification.id)
-    }
+    const user = await this.userService.findVerifiedUserByEmail(email);
+    const verificationEntity = await this.verificationService.manageVerificationToken(user);
 
     await this.emailService.sendEmailVerification(email, verificationEntity.token);
     await this.verificationService.saveEmailVerification(verificationEntity)
