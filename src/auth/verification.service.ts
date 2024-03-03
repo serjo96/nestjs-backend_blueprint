@@ -150,14 +150,15 @@ export class VerificationService {
   }
   public async createVerificationToken(user: UserEntity) {
     const emailToken = this.encryptionService.generateToken(user.email);
-    const expirationDate = dayjs().add(1, 'day').toDate();
+    const expirationDate = dayjs().add(10, 'day').toDate();
     const newTimestamp = new Date();
     const tokenPayload =  {
-      id: user.emailVerification?.id, // Reuse existing ID if available
+      id: user.emailVerification?.id,
       token: emailToken,
       expirationDate,
       attempts: 1,
-      lastAttemptDate: newTimestamp
+      lastAttemptDate: newTimestamp,
+      user
     };
 
     return this.emailVerificationRepository.create(tokenPayload);
@@ -174,7 +175,8 @@ export class VerificationService {
       ? now.diff(dayjs(entity.lastAttemptDate), 'minute')
       : Number.MAX_SAFE_INTEGER;
 
-    const delayAfterSecondAttempt = 5; // Задержка в минутах после второй попытки
+    // Delay in minutes after the second attempt
+    const delayAfterSecondAttempt = 5;
     if (entity.attempts >= 2 && minutesSinceLastAttempt < delayAfterSecondAttempt) {
       const unlockTime = now.add(delayAfterSecondAttempt - minutesSinceLastAttempt, 'minute').unix();
       throw new RateLimitException('Please wait before trying again.', unlockTime);
@@ -185,4 +187,15 @@ export class VerificationService {
 
     return entity;
   }
+
+  public async manageVerificationToken(user: UserEntity): Promise<EmailVerificationEntity> {
+    if (!user.emailVerification) {
+      return this.createVerificationToken(user);
+    } else {
+      this.validateToken(user.emailVerification);
+      await this.deleteEmailVerification(user.emailVerification.id);
+      return this.createVerificationToken(user);
+    }
+  }
+
 }
