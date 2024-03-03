@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import {Injectable, NotFoundException} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, Repository } from 'typeorm';
 import { FindOptionsRelations } from 'typeorm/find-options/FindOptionsRelations';
@@ -75,5 +75,16 @@ export class UsersService {
 
   public async setUserLastActivity(userId: string) {
     return await this.userRepository.update(userId, {lastActiveAt: new Date()})
+  }
+
+  public async findVerifiedUserByEmail(email: string): Promise<UserEntity> {
+    const user = await this.findByEmail(email, { emailVerification: true });
+    if (!user) {
+      throw new NotFoundException(`User doesn't exist`);
+    }
+    if (user.confirmed) {
+      throw new BadRequestException('User already verified.');
+    }
+    return user;
   }
 }
