@@ -11,12 +11,16 @@ import { UserEntity } from './users.entity';
 import {DatabaseError} from "~/common/exceptions/DatabaseError";
 import {FindOptionsWhere} from "typeorm/find-options/FindOptionsWhere";
 import {FindManyOptions} from "typeorm/find-options/FindManyOptions";
+import {Profile} from "@user/profiles.entity";
+import {AdminUpdateUserDto} from "@user/dto/edit-user.dto";
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(Profile)
+    private readonly userProfileRepository: Repository<Profile>,
   ) {}
 
   public findAll(where: FindManyOptions<UserEntity>): Promise<UserEntity[]> {
@@ -49,32 +53,44 @@ export class UsersService {
       ...userDto,
       lastActiveAt: new Date()
     });
-    await this.userRepository.save(user).catch(err => {
-      throw new DatabaseError(err.message);
-    });
-    return user;
-  }
+    const profile = await this.userProfileRepository.create({
+      user
+    })
 
-  async updateUser(id: string, data: any) {
-    const toUpdate = await this.userRepository.findOneBy({ id });
-    const updated: any = Object.assign(toUpdate, data);
     try {
-      return await this.userRepository.save(updated);
+      await this.userRepository.save(user);
+      await this.userProfileRepository.save(profile);
+      return user;
     } catch (error) {
-      console.log(error);
+      throw new DatabaseError(error.message);
     }
   }
 
+  public async updateUser(id: string, data: AdminUpdateUserDto) {
+    const toUpdate = await this.userRepository.findOneBy({ id });
+    const updated: UserEntity = Object.assign(toUpdate, data);
+
+    return await this.userRepository.save(updated).catch(err => {
+      throw new DatabaseError(err.message);
+    });
+  }
+
   public updateUserFiled(id: string, payload: Partial<UserEntity>) {
-    return this.userRepository.update(id, payload)
+    return this.userRepository.update(id, payload).catch(err => {
+      throw new DatabaseError(err.message);
+    })
   }
 
   private async removeUser(id: string) {
-    return await this.userRepository.softDelete({ id });
+    return await this.userRepository.softDelete({ id }).catch(err => {
+      throw new DatabaseError(err.message);
+    });
   }
 
   public async setUserLastActivity(userId: string) {
-    return await this.userRepository.update(userId, {lastActiveAt: new Date()})
+    return await this.userRepository.update(userId, {lastActiveAt: new Date()}).catch(err => {
+      throw new DatabaseError(err.message);
+    })
   }
 
   public async deleteUser(userId: string, currentUserId: string) {

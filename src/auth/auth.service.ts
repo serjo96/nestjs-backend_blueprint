@@ -176,7 +176,7 @@ export class AuthService {
     const password = this.generateRandomPassword();
 
     //At user entities have orm hook before update where we hash our password
-    await this.userService.updateUser(user.id, { password });
+    await this.userService.updateUserFiled(user.id, { password });
     return password;
   }
 

@@ -5,10 +5,12 @@ import { UsersController } from './users.controller';
 import { UserEntity } from './users.entity';
 import { UsersService } from './users.service';
 import {AuthModule} from "~/auth/auth.module";
+import {Profile} from "@user/profiles.entity";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserEntity]),
+    TypeOrmModule.forFeature([UserEntity, Profile]),
+    // Added for JwtAuthGuard
     forwardRef(() => AuthModule),
   ],
   providers: [UsersService],
