@@ -1,4 +1,4 @@
-import {BadRequestException, Inject, Injectable, forwardRef} from "@nestjs/common";
+import {BadRequestException, Inject, Injectable, forwardRef, NotFoundException} from "@nestjs/common";
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {ConfigService} from "@nestjs/config";
@@ -48,19 +48,18 @@ export class VerificationService {
     return this.forgottenPasswordRepository.delete(where);
   }
 
-  public findForgottenPasswordUser(
-    where: GetRepositoryMethodsArgs<ForgottenPasswordEntity, 'findOne'>[0]['where'],
-  ): Promise<ForgottenPasswordEntity> {
-    return this.forgottenPasswordRepository.findOne({
-      where,
-      relations: ['user'],
-    });
-  }
-
   public saveEmailVerification(data: Partial<EmailVerificationEntity>): Promise<EmailVerificationEntity | undefined> {
     let entity = EmailVerificationEntity.create(data as EmailVerificationEntity);
 
     return this.emailVerificationRepository.save(entity).catch(err => {
+      throw new DatabaseError(err.message);
+    });
+  }
+
+  public saveForgottenPasswordToken(data: Partial<ForgottenPasswordEntity>) {
+    const userForgotPassword = ForgottenPasswordEntity.create(data as ForgottenPasswordEntity);
+
+    return this.forgottenPasswordRepository.save(userForgotPassword).catch(err => {
       throw new DatabaseError(err.message);
     });
   }
@@ -128,43 +127,8 @@ export class VerificationService {
     return verificationRecord.user
   }
 
-  public saveForgottenPasswordToken(data: Partial<ForgottenPasswordEntity>) {
-    const userForgotPassword = ForgottenPasswordEntity.create(data as ForgottenPasswordEntity);
 
-    return this.forgottenPasswordRepository.save(userForgotPassword);
-  }
-
-  public async createForgottenPasswordToken(user: UserEntity) {
-    const emailToken = this.encryptionService.generateToken(user.email);
-    const expirationDate = dayjs().add(1, 'day').toDate();
-    const newTimestamp = new Date();
-    const tokenPayload =  {
-      token: emailToken,
-      expirationDate,
-      attempts: 1,
-      lastAttemptDate: newTimestamp,
-      user: user
-    };
-
-    return this.forgottenPasswordRepository.create(tokenPayload);
-  }
-  public async createVerificationToken(user: UserEntity) {
-    const emailToken = this.encryptionService.generateToken(user.email);
-    const expirationDate = dayjs().add(10, 'day').toDate();
-    const newTimestamp = new Date();
-    const tokenPayload =  {
-      id: user.emailVerification?.id,
-      token: emailToken,
-      expirationDate,
-      attempts: 1,
-      lastAttemptDate: newTimestamp,
-      user
-    };
-
-    return this.emailVerificationRepository.create(tokenPayload);
-  }
-
-  public validateToken(entity: EmailVerificationEntity | ForgottenPasswordEntity): EmailVerificationEntity | ForgottenPasswordEntity {
+  private validateToken(entity: EmailVerificationEntity | ForgottenPasswordEntity): EmailVerificationEntity | ForgottenPasswordEntity {
     const now = dayjs();
     const tokenHasExpired = now.isAfter(dayjs(entity.expirationDate));
     if (tokenHasExpired) {
@@ -186,6 +150,55 @@ export class VerificationService {
     entity.lastAttemptDate = now.toDate();
 
     return entity;
+  }
+
+  private async createForgottenPasswordToken(user: UserEntity) {
+    const emailToken = this.encryptionService.generateToken(user.email);
+    const expirationDate = dayjs().add(1, 'day').toDate();
+    const newTimestamp = new Date();
+    const tokenPayload =  {
+      token: emailToken,
+      expirationDate,
+      attempts: 1,
+      lastAttemptDate: newTimestamp,
+      user: user
+    };
+
+    return this.forgottenPasswordRepository.create(tokenPayload);
+  }
+
+  public async createVerificationToken(user: UserEntity) {
+    const emailToken = this.encryptionService.generateToken(user.email);
+    const expirationDate = dayjs().add(10, 'day').toDate();
+    const newTimestamp = new Date();
+    const tokenPayload =  {
+      id: user.emailVerification?.id,
+      token: emailToken,
+      expirationDate,
+      attempts: 1,
+      lastAttemptDate: newTimestamp,
+      user
+    };
+
+    return this.emailVerificationRepository.create(tokenPayload);
+  }
+
+  public async initiatePasswordResetProcess(email: string) {
+    const user = await this.usersService.findByEmail(email, { forgottenPassword: true });
+    let forgottenPasswordEntity = null;
+
+    if (!user) {
+      throw new NotFoundException(`User doesn't exist`);
+    }
+
+    if(!user.forgottenPassword) {
+      forgottenPasswordEntity = await this.createForgottenPasswordToken(user)
+    } else {
+      forgottenPasswordEntity = this.validateToken(user.forgottenPassword);
+    }
+
+    await this.emailService.sendEmailForgotPassword(email, forgottenPasswordEntity.token);
+    await this.saveForgottenPasswordToken(forgottenPasswordEntity)
   }
 
   public async manageVerificationToken(user: UserEntity): Promise<EmailVerificationEntity> {

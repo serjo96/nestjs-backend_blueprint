@@ -3,8 +3,6 @@ import {
   Controller, Delete,
   Get,
   HttpStatus,
-  Logger,
-  NotFoundException,
   Param,
   Post,
   Query,
@@ -82,35 +80,30 @@ export class AuthController {
   })
   @Get('/token-login')
   public async loginWithTempToken(@Query('tempToken') tempToken: string): Promise<UserWithToken> {
-    try {
-      const userId = this.authService.verifyTempToken(tempToken);
-      const user = await this.userService.findOne({
-        id: userId
-      });
-
-      if (!user) {
-        throw new UnauthorizedException('User not found.');
-      }
-
-      const {accessToken, refreshToken} = this.authService.generateUserTokens({
-        email: user.email,
-        userId: user.id,
-        roles: user.roles
-      });
-
-
-      //logging user activity
-      await this.userService.setUserLastActivity(user.id)
-      return {
-        user,
-        token: {
-          accessToken,
-          refreshToken
-        }
-      }
-
-    } catch (error) {
+    const userId = this.authService.verifyTempToken(tempToken);
+    if (!userId) {
       throw new UnauthorizedException('Invalid or expired temporary token.');
+    }
+
+    const user = await this.userService.findOne({ id: userId });
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    const { accessToken, refreshToken } = this.authService.generateUserTokens({
+      email: user.email,
+      userId: user.id,
+      roles: user.roles
+    });
+
+    //logging user activity
+    await this.userService.setUserLastActivity(user.id)
+    return {
+      user,
+      token: {
+        accessToken,
+        refreshToken
+      }
     }
   }
 
@@ -149,21 +142,7 @@ export class AuthController {
     type: TokenValidationErrorDto
   })
   public async requestPasswordReset(@Param() { email }: { email: string }) {
-    const user = await this.userService.findByEmail(email, { forgottenPassword: true });
-    let forgottenPasswordEntity = null;
-    if (!user) {
-      throw new NotFoundException(`User doesn't exist`);
-    }
-
-    if(!user.forgottenPassword) {
-      forgottenPasswordEntity = await this.verificationService.createForgottenPasswordToken(user)
-    } else {
-      forgottenPasswordEntity = this.verificationService.validateToken(user.forgottenPassword);
-    }
-
-    await this.emailService.sendEmailForgotPassword(email, forgottenPasswordEntity.token);
-    await this.verificationService.saveForgottenPasswordToken(forgottenPasswordEntity)
-
+    await this.verificationService.initiatePasswordResetProcess(email);
     return 'ok'
   }
 
@@ -177,13 +156,10 @@ export class AuthController {
       const newPassword = await this.authService.resetPassword(userEntity)
       const temporaryToken = this.authService.generateTemporaryToken(userEntity.id)
 
-      await this.verificationService.deleteForgottenPassword({
-        token,
-      });
+      await this.verificationService.deleteForgottenPassword({token});
       await this.emailService.sendResetPasswordEmail(userEntity.email, newPassword)
-      return {
-        url: `${host}/login?&token=${temporaryToken}`
-      }
+
+      return { url: `${host}/login?&token=${temporaryToken}` }
     } catch (error) {
       throw new RedirectException(error, `${host}/error`)
     }
@@ -226,9 +202,7 @@ export class AuthController {
   public async confirmRegistration(
     @Param() { token }: { token: string },
   ) {
-    let redirectLink = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
-    const logger = new Logger(AuthController.name);
-
+    const redirectLink = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
     try {
       const userEmail = await this.verificationService.verifyConfirmToken(token);
       await this.emailService.sendSuccessRegistrationEmail(userEmail);
