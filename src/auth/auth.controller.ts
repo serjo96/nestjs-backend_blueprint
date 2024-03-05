@@ -2,14 +2,13 @@ import {
   Body,
   Controller, Delete,
   Get,
-  HttpStatus,
   Param,
   Post,
   Query,
   Redirect,
   UnauthorizedException
 } from '@nestjs/common';
-import {ApiBody, ApiOkResponse, ApiParam, ApiResponse, ApiTags} from '@nestjs/swagger';
+import {ApiTags} from '@nestjs/swagger';
 
 import { EmailService } from '~/email/email.service';
 import { AuthService } from './auth.service';
@@ -19,13 +18,16 @@ import { LoginByEmail } from './dto/login.dto';
 import {ConfigService} from "@nestjs/config";
 import {ConfigEnum, ProjectConfig} from "~/config/main-config";
 import {UsersService} from "@user/users.service";
-import { TokenValidationErrorDto } from '~/common/dto/TokenValidationErrorDto';
 import {VerificationService} from "~/auth/verification.service";
-import {RefreshTokenDto} from "~/auth/dto/refresh-token.dto";
-import {TokensResponse, UserWithToken} from "~/auth/dto/tokens.dto";
-import {RegistrationValidationErrorDto} from "~/common/dto/error-validation.dto";
+import {UserWithToken} from "~/auth/dto/tokens.dto";
 import {RedirectException} from "~/common/exceptions/RedirectException";
 import {BadRequestException} from "~/common/exceptions/bad-request";
+import {ApiResendVerificationDocs} from "~/auth/api-docs/api-resend-verification-docs";
+import {ApiConfirmRegistrationDocs, ApiRegistrationDocs} from "~/auth/api-docs/api-registration-docs";
+import {ApiLoginDocs, ApiLoginTokenDocs} from "~/auth/api-docs/api-login.docs";
+import {ApiRefreshTokenDocs} from "~/auth/api-docs/api-refresh-token.docs";
+import {ApiLogoutDocs} from "~/auth/api-docs/api-logout.docs";
+import {ApiForgotPasswordDocs, ApiResetPasswordDocs} from "~/auth/api-docs/api-reset-password.docs";
 
 @ApiTags('auth')
 @Controller('/auth')
@@ -39,15 +41,7 @@ export class AuthController {
   ) {}
 
   @Post('/sign-up')
-  @ApiOkResponse({
-    description: 'A user has been successfully registration',
-    type: UserWithToken,
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Returns bad request if password is to week or email not pass, or if user already exist.',
-    type: RegistrationValidationErrorDto
-  })
+  @ApiRegistrationDocs()
   public async register(@Body() createUserDto: CreateUserDto): Promise<UserWithToken> {
     const userData = await this.authService.register(createUserDto);
 
@@ -58,28 +52,18 @@ export class AuthController {
   }
 
   @Post('/login')
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
-  @ApiOkResponse({
-    description: 'Return user with tokens at success login.',
-    type: UserWithToken
-  })
-  @ApiBody({
-    type: LoginByEmail
-  })
+  @ApiLoginDocs()
   public async login(@Body() login: LoginByEmail) {
-    const loginResult = await this.authService.login(login);
+    const user = await this.authService.validateUserByPassword(login);
+    const loginResult = await this.authService.login(login, user);
 
     //logging user activity
     await this.userService.setUserLastActivity(loginResult.user.id)
     return loginResult;
   }
 
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: "If user doesn't exist or invalid token" })
-  @ApiOkResponse({
-    description: 'Return user with tokens at success login.',
-    type: UserWithToken
-  })
   @Get('/token-login')
+  @ApiLoginTokenDocs()
   public async loginWithTempToken(@Query('tempToken') tempToken: string): Promise<UserWithToken> {
     const userId = this.authService.verifyTempToken(tempToken);
     if (!userId) {
@@ -109,13 +93,7 @@ export class AuthController {
   }
 
   @Post('/refresh-token')
-  @ApiBody({ type: RefreshTokenDto })
-  @ApiResponse({
-    status: 200,
-    description: 'The access token has been refreshed successfully',
-    type: TokensResponse
-  })
-  @ApiResponse({ status: 400, description: 'Invalid refresh token' })
+  @ApiRefreshTokenDocs()
   public async refresh(@Body('refreshToken') refreshToken: string): Promise<{ accessToken: string, refreshToken: string }> {
     const tokenData = await this.authService.refreshAccessToken(refreshToken);
     return {
@@ -124,31 +102,22 @@ export class AuthController {
     };
   }
 
-  @ApiBody({ type: RefreshTokenDto })
   @Delete('/logout')
+  @ApiLogoutDocs()
   public async logout(@Body('refreshToken') refreshToken: string) {
     await this.authService.logout(refreshToken);
     return true;
   }
 
   @Get('/forgot-password/:email')
-  @ApiParam({ name: 'email', required: true, description: 'User email for reset password' })
-  @ApiOkResponse({
-    description: 'Returns ok iff operation is success.',
-    type: String,
-  })
-  @ApiResponse({
-    description: 'Returns unix time before unlock attempt, if email sent recently',
-    status: HttpStatus.TOO_MANY_REQUESTS,
-    type: TokenValidationErrorDto
-  })
+  @ApiForgotPasswordDocs()
   public async requestPasswordReset(@Param() { email }: { email: string }) {
     await this.verificationService.initiatePasswordResetProcess(email);
     return 'ok'
   }
 
   @Get('/reset-password/:token')
-  @ApiParam({ name: 'token', required: true, description: 'Token for reset password' })
+  @ApiResetPasswordDocs()
   @Redirect()
   public async resetPassword(@Param() { token }: { token: string }) {
     const host = this.configService.get<ProjectConfig>(ConfigEnum.PROJECT).frontendHost
@@ -167,19 +136,7 @@ export class AuthController {
   }
 
   @Get('/resend-verification/:email')
-  @ApiParam({
-    name: 'email',
-    description: 'Email for resend verification',
-    type: 'string',
-  })
-  @ApiOkResponse({
-    description: 'At success operation returns string "ok"'
-  })
-  @ApiResponse({
-    description: 'Returns unix time before unlock attempt, if email sent recently',
-    status: HttpStatus.TOO_MANY_REQUESTS,
-    type: TokenValidationErrorDto
-  })
+  @ApiResendVerificationDocs()
   public async sendEmailVerification(@Param() { email }: { email: string }) {
     const user = await this.userService.findVerifiedUserByEmail(email);
     if (user.confirmed) {
@@ -193,15 +150,7 @@ export class AuthController {
   }
 
   @Get('/confirm/:token')
-  @ApiParam({
-    name: 'token',
-    description: 'Token for confirm registration',
-    type: String,
-  })
-  @ApiResponse({
-    status: HttpStatus.PERMANENT_REDIRECT,
-    description: 'Redirects to frontend app',
-  })
+  @ApiConfirmRegistrationDocs()
   @Redirect()
   public async confirmRegistration(
     @Param() { token }: { token: string },

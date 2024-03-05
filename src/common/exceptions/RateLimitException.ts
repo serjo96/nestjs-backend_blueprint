@@ -1,11 +1,11 @@
-import {BadRequestException, HttpStatus} from '@nestjs/common';
+import {HttpStatus} from '@nestjs/common';
+import {HttpException} from "@nestjs/common/exceptions/http.exception";
 
-export class RateLimitException extends BadRequestException {
+export class RateLimitException extends HttpException {
   constructor(message: string, public unlockTime: number) {
     super({
-      statusCode: HttpStatus.TOO_MANY_REQUESTS,
       message,
       unlockTime,
-    });
+    }, HttpStatus.TOO_MANY_REQUESTS);
   }
 }

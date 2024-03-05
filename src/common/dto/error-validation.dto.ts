@@ -1,18 +1,12 @@
 import {ApiProperty} from "@nestjs/swagger";
+import {BadResponseDto} from "~/common/dto/response-exception.dto";
 
 
 type ErrorObject = {
   [key: string]: string[];
 };
 
-class ValidationErrorDto {
-  @ApiProperty({ example: 'Validation failed' })
-  message: string;
-
-  @ApiProperty({
-    example: 400
-  })
-  statusCode: 400
+class ValidationErrorDto extends BadResponseDto{
 
   @ApiProperty({
     example: {
