@@ -78,16 +78,16 @@ export class AuthService {
     return await bcrypt.compare(attempt, dbPassword);
   }
 
-  private async validateUserByPassword({ email, password }: ValidateUserByPasswordPayload) {
+  public async validateUserByPassword({ email, password }: ValidateUserByPasswordPayload) {
     // find if user exist with this email
     const user = await this.userService.findByEmail(email);
     if (!user) {
-      throw new BadRequestException('Invalid email or password.');
+      throw new UnauthorizedException('Invalid email or password.');
     }
 
     const isPasswordMatching = await bcrypt.compare(password, user.password);
     if (!isPasswordMatching) {
-      throw new BadRequestException('Invalid email or password.');
+      throw new UnauthorizedException('Invalid email or password.');
     }
 
     return user;
@@ -121,8 +121,8 @@ export class AuthService {
     };
   }
 
-  public async login(loginUserDto: LoginByEmail): Promise<UserWithToken> {
-    const user = await this.validateUserByPassword(loginUserDto);
+  public async login(loginUserDto: LoginByEmail, user: UserEntity): Promise<UserWithToken> {
+
 
     const {accessToken, refreshToken, expireDateRefreshToken} = this.generateUserTokens({
       email: user.email,

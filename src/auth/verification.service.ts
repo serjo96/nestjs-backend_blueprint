@@ -188,7 +188,7 @@ export class VerificationService {
     let forgottenPasswordEntity = null;
 
     if (!user) {
-      throw new NotFoundException(`User doesn't exist`);
+      throw new BadRequestException(`User doesn't exist`);
     }
 
     if(!user.forgottenPassword) {

@@ -95,9 +95,7 @@ export class UsersService {
 
   public async deleteUser(userId: string, currentUserId: string) {
     if (currentUserId === userId) {
-      throw new BadRequestException({
-        message: "You can't delete yourself",
-      });
+      throw new BadRequestException( "You can't delete yourself");
     }
     await this.removeUser(userId);
     return await this.findOne({id: userId}, { withDeleted: true });
@@ -106,11 +104,9 @@ export class UsersService {
   public async findVerifiedUserByEmail(email: string): Promise<UserEntity> {
     const user = await this.findByEmail(email, { emailVerification: true });
     if (!user) {
-      throw new NotFoundException(`User doesn't exist`);
+      throw new BadRequestException(`User doesn't exist`);
     }
-    if (user.confirmed) {
-      throw new BadRequestException('User already verified.');
-    }
+
     return user;
   }
 }
