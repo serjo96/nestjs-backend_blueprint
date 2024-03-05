@@ -23,8 +23,9 @@ import { TokenValidationErrorDto } from '~/common/dto/TokenValidationErrorDto';
 import {VerificationService} from "~/auth/verification.service";
 import {RefreshTokenDto} from "~/auth/dto/refresh-token.dto";
 import {TokensResponse, UserWithToken} from "~/auth/dto/tokens.dto";
-import {ErrorValidationDto} from "~/common/dto/error-validation.dto";
+import {RegistrationValidationErrorDto} from "~/common/dto/error-validation.dto";
 import {RedirectException} from "~/common/exceptions/RedirectException";
+import {BadRequestException} from "~/common/exceptions/bad-request";
 
 @ApiTags('auth')
 @Controller('/auth')
@@ -45,7 +46,7 @@ export class AuthController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Returns bad request if password is to week or email not pass, or if user already exist.',
-    type: ErrorValidationDto
+    type: RegistrationValidationErrorDto
   })
   public async register(@Body() createUserDto: CreateUserDto): Promise<UserWithToken> {
     const userData = await this.authService.register(createUserDto);
@@ -181,6 +182,9 @@ export class AuthController {
   })
   public async sendEmailVerification(@Param() { email }: { email: string }) {
     const user = await this.userService.findVerifiedUserByEmail(email);
+    if (user.confirmed) {
+      throw new BadRequestException('User already verified.');
+    }
     const verificationEntity = await this.verificationService.manageVerificationToken(user);
 
     await this.emailService.sendEmailVerification(email, verificationEntity.token);
