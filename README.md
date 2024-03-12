@@ -19,24 +19,19 @@ This project serves as a comprehensive template for building scalable and mainta
 
 - Node.js (v14 or later)
 - Docker and Docker Compose (for containerized environments)
-- A PostgreSQL database
+- (Optional) Remove from .gitignore /migrations folder, if you want to share your migrations at git.
+- (Optional) Add .env.production for some prod env or just add required env, at your environment.
 
 ### Installation
 
-1. Clone the repository:
+
+1. Install dependencies:
 
 ```bash
-git clone https://github.com/serjo96/nestjs-backend_blueprint.git
-cd nestjs-backend_blueprint
+yarn install
 ```
 
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Copy the `.env.development` and `.env.test` files and configure them according to your environment:
+2. Copy the `.env.development` and `.env.test` files and configure them according to your environment:
 
 ```bash
 cp .env.development .env
@@ -50,23 +45,35 @@ To run the application in development mode:
 npm run start:dev
 ```
 
-For a production-like environment with Docker:
+For run additional services like PostgresSql and email service for local dev run docker compose:
 
 ```bash
 docker-compose up --build
 ```
 
-### Running Migrations
+### Working with migrations
+
+Generating init migrations:
+
+```bash
+yarn run typeorm migration:generate -d src/ormconfig.ts migrations/MIGRATION_NAME
+````
 
 To apply database migrations:
 
 ```bash
-npm run typeorm migration:run
+yarn run typeorm migration:run
 ```
+
+*All scripts for migrations also have in package.json*
 
 ### Accessing the API
 
-Once the application is running, you can access the API at `http://localhost:3000`.
+Once the application is running, you can access the API at http://localhost:3000.
+
+### Accessing the Open Api docs
+
+After start application api docs will be at http://localhost:3000/api/
 
 ## Testing
 
