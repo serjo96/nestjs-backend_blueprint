@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {BadRequestException, ForbiddenException, Injectable, UnauthorizedException} from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
 import { CreateUserDto } from '@user/dto/create-user.dto';
@@ -176,7 +176,7 @@ export class AuthService {
     const password = this.generateRandomPassword();
 
     //At user entities have orm hook before update where we hash our password
-    await this.userService.updateUserFiled(user.id, { password });
+    await this.userService.updateUser(user.id, { password });
     return password;
   }
 
@@ -189,7 +189,7 @@ export class AuthService {
         token: refreshToken
       } });
     if (!tokenEntity || new Date() > tokenEntity.expiresIn) {
-      throw new UnauthorizedException('Refresh token is invalid or expired');
+      throw new ForbiddenException('Refresh token is invalid or expired');
     }
 
     // Removing the used Refresh token from the database
