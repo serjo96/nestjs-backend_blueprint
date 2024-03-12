@@ -1,5 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
-import {ApiBody, ApiUnauthorizedResponse, ApiOkResponse} from '@nestjs/swagger';
+import {ApiBody, ApiOkResponse, ApiForbiddenResponse} from '@nestjs/swagger';
 import {TokensResponse} from "~/auth/dto/tokens.dto";
 import {RefreshTokenDto} from "~/auth/dto/refresh-token.dto";
 import {UnauthorizedResponseDto} from "~/common/dto/response-exception.dto";
@@ -11,8 +11,8 @@ export function ApiRefreshTokenDocs() {
       description: 'The access token has been refreshed successfully',
       type: TokensResponse
     }),
-    ApiUnauthorizedResponse({
-      description: "Returns if token is invalid.",
+    ApiForbiddenResponse({
+      description: "Returns if token is invalid or expired.",
       type: UnauthorizedResponseDto
     }),
   );
