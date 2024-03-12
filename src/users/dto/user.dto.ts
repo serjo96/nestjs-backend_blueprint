@@ -1,9 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
+import {ApiHideProperty, ApiProperty} from '@nestjs/swagger';
 import {IsEmail, IsNotEmpty, IsEnum, IsString, MinLength, ValidateNested, IsOptional} from 'class-validator';
 import {Exclude, Expose, Type} from 'class-transformer';
 import {RolesEnum} from "@user/users.entity";
 import {ProfileDto} from "@user/dto/profile.dto";
-import {ForgottenPasswordDto} from "~/auth/dto/forgottent-password.dto";
 
 @Exclude()
 export class UserDto {
@@ -32,8 +31,9 @@ export class UserDto {
   @Expose()
   confirmed: boolean;
 
-  @ApiProperty()
+  @ApiHideProperty()
   @IsString()
+  @Exclude()
   @MinLength(4, { message: 'Password must be longer than 4 characters' })
   @IsNotEmpty()
   password?: string;
