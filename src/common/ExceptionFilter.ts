@@ -6,13 +6,14 @@ import {CustomServerException} from "~/common/exceptions/CustomServerException";
 import {DatabaseError} from "~/common/exceptions/DatabaseError";
 import {RateLimitException} from "~/common/exceptions/RateLimitException";
 import {RedirectException} from "~/common/exceptions/RedirectException";
+import {ErrorData} from "~/common/custom-validations";
 
 type ResponseData = {
-	statusCode: HttpStatus,
+	status: HttpStatus,
 	message: string,
 	stackTrace?: string
   errors?: {
-    [key: string]: string[];
+    [key: string]: ErrorData;
   }
   payload?: {
     [key: string]: string | number;
@@ -32,7 +33,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 		const request = ctx.getRequest<Request>();
 		const logger = new Logger(GlobalExceptionFilter.name)
     const responseData: ResponseData = {
-      statusCode:  HttpStatus.INTERNAL_SERVER_ERROR,
+      status:  HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal Server Error'
     }
     let errorPayload: ErrorPayload = {
@@ -43,21 +44,21 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof DatabaseError || exception instanceof TypeORMError) {
       errorPayload.exceptionPayload = (exception as DatabaseError).payload
     } else if(exception instanceof CustomServerException ) {
-      responseData.statusCode = 500;
+      responseData.status = 500;
       responseData.message = exception.message;
     } else if (exception instanceof RateLimitException) {
-      responseData.statusCode = exception.getStatus();
+      responseData.status = exception.getStatus();
       responseData.message = exception.message;
       responseData.payload = { unlockTime: exception.unlockTime };
     } else if (exception instanceof RedirectException) {
-      responseData.statusCode = exception.getStatus();
+      responseData.status = exception.getStatus();
       responseData.message = exception.message;
       logger.error(exception, exception.stack, errorPayload)
 
       return response.redirect(exception.redirectUrl)
     } else if (exception.getStatus && exception.getStatus() !== 500 || exception instanceof HttpException) {
       const exceptionResp = exception.getResponse()
-      responseData.statusCode = exception.getStatus();
+      responseData.status = exception.getStatus();
       responseData.message = exception.message;
 
       if(exceptionResp.errors) {
@@ -67,6 +68,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     logger.error(exception, exception.stack, errorPayload)
 
-    response.status(responseData.statusCode).json(responseData);
+    response.status(responseData.status).json(responseData);
 	}
 }

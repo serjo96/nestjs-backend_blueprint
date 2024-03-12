@@ -3,15 +3,28 @@ import {BadResponseDto} from "~/common/dto/response-exception.dto";
 
 
 type ErrorObject = {
-  [key: string]: string[];
+  [key: string]: {
+    messages: string[],
+    nested?: ErrorObject
+  };
 };
 
 class ValidationErrorDto extends BadResponseDto{
 
   @ApiProperty({
     example: {
-      email: ['email must be an email'],
-      password: ['password must be longer than or equal to 6 characters']
+      email: {
+        messages: ['email must be an email'],
+        nested: {
+          messages: ['some error message for nested param.']
+        }
+      },
+      password: {
+        messages: ['password must be longer than or equal to 6 characters'],
+        nested: {
+          messages: ['some error message for nested param.']
+        }
+      }
     },
     type: 'object',
   })
@@ -34,6 +47,10 @@ function createValidationErrorDto(examples: ErrorObject): typeof ValidationError
 
 
 export const RegistrationValidationErrorDto = createValidationErrorDto({
-  password: ["password too weak"],
-  email: ['email must be not empty']
+  password: {
+    messages: ["password too weak"]
+  },
+  email: {
+    messages: ['email must be not empty']
+  }
 });
