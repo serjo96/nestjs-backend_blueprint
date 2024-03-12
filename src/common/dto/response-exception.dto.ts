@@ -14,9 +14,9 @@ class ResponseExceptionDto {
 
 
 export class BadResponseDto extends ResponseExceptionDto {
-  status = HttpStatus.BAD_REQUEST;
+  status = 400;
 }
 
 export class UnauthorizedResponseDto extends ResponseExceptionDto {
-  status = HttpStatus.UNAUTHORIZED;
+  status = 401;
 }
