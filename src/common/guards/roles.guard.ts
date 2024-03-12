@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {CanActivate, ExecutionContext, ForbiddenException, Injectable} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
 import { RolesEnum } from '@user/users.entity';
@@ -23,6 +23,9 @@ export class RolesGuard implements CanActivate {
       });
     };
 
-    return user && user.roles && hasRole();
+    if(user && user.roles && hasRole()) {
+      return true;
+    }
+    throw new ForbiddenException(`User dont have permissions for this route.`)
   }
 }
