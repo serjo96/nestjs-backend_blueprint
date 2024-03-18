@@ -42,7 +42,7 @@ export class UsersController {
   @ApiGetAllUsersDocs()
   @Roles(RolesEnum.ADMIN)
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
-  public getAllUsers(): Promise<UserEntity[]> {
+  public async getAllUsers(): Promise<UserEntity[]> {
     return this.usersService.findAll({});
   }
 
@@ -51,7 +51,7 @@ export class UsersController {
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
   public async profile(@Req() req: Request): Promise<UserEntity> {
     const { user } = req;
-    return user;
+    return this.usersService.findOne({id: user.userId});
   }
 
   @Delete(':id')
@@ -60,7 +60,7 @@ export class UsersController {
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
   public async removeUser(@Param() { id }: { id: string }, @Req() req: Request): Promise<UserEntity> {
     const { user } = req;
-    return this.usersService.deleteUser(id, user.id);
+    return this.usersService.deleteUser(id, user.userId);
   }
 
 
