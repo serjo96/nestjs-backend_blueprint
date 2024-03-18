@@ -1,4 +1,3 @@
-
 # NestJS Backend Blueprint
 
 This project serves as a comprehensive template for building scalable and maintainable backend services using NestJS. It incorporates best practices and provides a solid foundation for developing robust applications.
@@ -24,7 +23,6 @@ This project serves as a comprehensive template for building scalable and mainta
 
 ### Installation
 
-
 1. Install dependencies:
 
 ```bash
@@ -39,25 +37,25 @@ cp .env.development .env
 
 ### Running the Application
 
+For run additional services like PostgreSQL and email service for local development, run docker-compose:
+
+```bash
+docker-compose up --build
+```
+
 To run the application in development mode:
 
 ```bash
 npm run start:dev
 ```
 
-For run additional services like PostgresSql and email service for local dev run docker compose:
-
-```bash
-docker-compose up --build
-```
-
-### Working with migrations
+### Working with Migrations
 
 Generating init migrations:
 
 ```bash
 yarn run typeorm migration:generate -d src/ormconfig.ts migrations/MIGRATION_NAME
-````
+```
 
 To apply database migrations:
 
@@ -71,9 +69,19 @@ yarn run typeorm migration:run
 
 Once the application is running, you can access the API at http://localhost:3000.
 
-### Accessing the Open Api docs
+### Accessing the OpenAPI docs
 
-After start application api docs will be at http://localhost:3000/api/
+After starting the application, API docs will be available at http://localhost:3000/api/
+
+### Additional Services
+
+- **pgAdmin**: Access pgAdmin for database management at [http://localhost:5050/browser/](http://localhost:5050/browser/). Default authentication data:
+    - **Login**: admin@example.com
+    - **Password**: qwerty123
+
+- **MailHog**: Access MailHog for local email testing at [http://localhost:8025/](http://localhost:8025/).
+
+All credentials for local development can be viewed and modified in the `.env.development` file.
 
 ## Testing
 
