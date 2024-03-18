@@ -1,8 +1,10 @@
 import { IsDate } from 'class-validator';
 import { BaseEntity as Base, BeforeInsert, CreateDateColumn, DeleteDateColumn, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 import { v4 as uuid4 } from 'uuid';
+import {ApiProperty} from "@nestjs/swagger";
 
 export abstract class BaseEntity extends Base {
+  @ApiProperty()
   @PrimaryColumn('uuid')
   public id: string;
 
