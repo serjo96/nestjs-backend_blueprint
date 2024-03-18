@@ -9,7 +9,7 @@ type ClassType<T> = new () => T;
 export class TransformInterceptor<T> implements NestInterceptor {
   constructor(private readonly classType: ClassType<T>) {}
 
-  intercept(context: ExecutionContext, next: CallHandler<T>): Observable<{ data: unknown }> {
+  intercept(context: ExecutionContext, next: CallHandler<T>): Observable<unknown> {
     return next.handle().pipe(
       map((data) => {
         let response = null;
@@ -19,9 +19,7 @@ export class TransformInterceptor<T> implements NestInterceptor {
           response = plainToClass(this.classType, data);
         }
 
-        return {
-          data: response,
-        };
+        return response;
       }),
     );
   }
