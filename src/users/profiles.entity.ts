@@ -10,7 +10,10 @@ export class Profile extends BaseEntity {
   })
   public name: string;
 
-  @Column({ nullable: true })
+  @Column({
+    type: 'date',
+    nullable: true
+  })
   birthday: Date;
 
   @Column({ nullable: true })
