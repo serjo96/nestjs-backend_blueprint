@@ -1,7 +1,7 @@
 import {applyDecorators} from '@nestjs/common';
 import {ApiOperation, ApiOkResponse} from '@nestjs/swagger';
 
-import {UserDto, UserResponseDto} from "@user/dto/user.dto";
+import {UserResponseDto} from "@user/dto/user.dto";
 
 //Api docs for get all users.
 export function ApiGetAllUsersDocs() {

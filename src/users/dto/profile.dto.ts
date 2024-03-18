@@ -1,30 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import {IsString, IsOptional, IsUrl, IsDate} from 'class-validator';
+import {OmitType} from '@nestjs/swagger';
+import {Profile} from "@user/profiles.entity";
 
-export class ProfileDto {
-  @ApiProperty({
-    type: String,
-    description: 'User name',
-    required: false
-  })
-  @IsString()
-  @IsOptional()
-  name?: string;
+export class ProfileDto extends OmitType(Profile, ['user', 'id'] as const) {}
+export class ProfileResponseDto extends OmitType(Profile, ['user'] as const) {}
 
-  @ApiProperty({
-    type: Date,
-    description: 'User birthday',
-    required: false
-  })
-  @IsDate()
-  @IsOptional()
-  birthday: Date;
-
-  @ApiProperty({
-    type: String,
-    description: 'Profile url link',
-    required: false
-  })
-  @IsUrl()
-  photoUrl: string;
-}

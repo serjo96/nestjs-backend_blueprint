@@ -1,8 +1,7 @@
 import {applyDecorators} from '@nestjs/common';
 import {ApiOperation, ApiOkResponse, ApiParam, ApiBody, ApiNotFoundResponse} from '@nestjs/swagger';
 
-import {UserDto, UserResponseDto} from "@user/dto/user.dto";
-import {UserEntity} from "@user/users.entity";
+import {UserResponseDto} from "@user/dto/user.dto";
 import {AdminUpdateUserBodyDto, UpdateUserBodyDto} from "@user/dto/edit-user.dto";
 
 //Api docs for update user

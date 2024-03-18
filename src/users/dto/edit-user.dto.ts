@@ -1,35 +1,26 @@
-import {IsEmail, IsEnum, IsOptional, IsString, IsUUID, ValidateNested} from 'class-validator';
-import { Type } from 'class-transformer';
-import {RolesEnum} from "@user/users.entity";
+import {IsEmail, IsEnum, IsOptional, IsString, ValidateNested} from 'class-validator';
+import {RolesEnum, UserEntity} from "@user/users.entity";
+import {OmitType, PartialType} from "@nestjs/swagger";
+import {ProfileDto} from "@user/dto/profile.dto";
+import {Type} from "class-transformer";
 
-class ProfileDto {
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  birthday?: Date;
-
-  @IsOptional()
-  @IsString()
-  photoUrl?: string;
-}
-
-export class UpdateUserDto {
-  @IsOptional()
+class UserBodyParams extends OmitType(UserEntity, ['password', 'roles', 'forgottenPassword', 'emailVerification','refreshTokens', 'lastActiveAt', 'confirmed', 'profile', 'id'] as const) {}
+export class UpdateUserBodyDto extends PartialType(UserBodyParams) {
   @IsEmail()
-  email?: string;
+  @IsOptional()
+  public email?: string;
+
+  @IsString()
+  @IsOptional()
+  public nickname?: string;
 
   @IsOptional()
-  @IsString()
-  nickname?: string;
-
   @ValidateNested()
   @Type(() => ProfileDto)
-  profile?: ProfileDto;
-}
+  public profile: ProfileDto;
 
-export class AdminUpdateUserDto extends UpdateUserDto {
+}
+export class AdminUpdateUserBodyDto extends UpdateUserBodyDto {
   @IsOptional()
   @IsEnum(RolesEnum)
   roles?: RolesEnum;
