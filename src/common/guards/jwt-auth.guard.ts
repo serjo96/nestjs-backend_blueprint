@@ -4,9 +4,9 @@ import {JWTService} from "~/auth/jwt.service";
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private jwtService: JWTService) {}
+  constructor(private readonly jwtService: JWTService) {}
 
-  canActivate(
+  public canActivate(
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
     const request = context.switchToHttp().getRequest();
