@@ -1,15 +1,20 @@
-import {applyDecorators, HttpStatus} from '@nestjs/common';
+import {applyDecorators} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
-  ApiOkResponse,
-  ApiParam, ApiResponse,
+  ApiOkResponse, ApiOperation,
+  ApiParam,
   ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import {TokenValidationErrorDto} from "~/common/dto/TokenValidationErrorDto";
 import {BadResponseDto} from "~/common/dto/response-exception.dto";
 
+//Api docs for resend verification.
 export function ApiResendVerificationDocs() {
   return applyDecorators(
+    ApiOperation({
+      operationId: 'resendVerificationEmail',
+      summary: 'Resend email for confirm verification.',
+    }),
     ApiParam({
       name: 'email',
       description: 'Email for resend verification',

@@ -1,12 +1,16 @@
 import {applyDecorators, HttpStatus} from '@nestjs/common';
-import {ApiOkResponse, ApiBody, ApiBadRequestResponse, ApiParam, ApiResponse} from '@nestjs/swagger';
-import {RefreshTokenDto} from "~/auth/dto/refresh-token.dto";
+import {ApiOkResponse, ApiBadRequestResponse, ApiParam, ApiResponse, ApiOperation} from '@nestjs/swagger';
 import {BadResponseDto} from "~/common/dto/response-exception.dto";
 import {ApiTooManyRequestsResponse} from "@nestjs/swagger/dist/decorators/api-response.decorator";
 import {TokenValidationErrorDto} from "~/common/dto/TokenValidationErrorDto";
 
+//Api docs for forgot password.
 export function ApiForgotPasswordDocs() {
   return applyDecorators(
+    ApiOperation({
+      operationId: 'forgotPassword',
+      summary: 'Send email with instructions for reset password.',
+    }),
     ApiParam({ name: 'email', required: true, description: 'User email for reset password' }),
     ApiOkResponse({
       description: 'Returns ok if operation is success.',
@@ -27,8 +31,14 @@ export function ApiForgotPasswordDocs() {
 }
 
 
+//Api docs for reset password.
 export function ApiResetPasswordDocs() {
   return applyDecorators(
+    ApiOperation({
+      operationId: 'resetPassword',
+      summary: 'Reset password.',
+      description: 'Creating new password, and redirect to app page with temporary token for auth by token.'
+    }),
     ApiParam({
       name: 'token',
       required: true,

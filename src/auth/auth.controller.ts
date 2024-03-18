@@ -94,7 +94,7 @@ export class AuthController {
 
   @Post('/refresh-token')
   @ApiRefreshTokenDocs()
-  public async refresh(@Body('refreshToken') refreshToken: string): Promise<{ accessToken: string, refreshToken: string }> {
+  public async updateAccessToken(@Body('refreshToken') refreshToken: string): Promise<{ accessToken: string, refreshToken: string }> {
     const tokenData = await this.authService.refreshAccessToken(refreshToken);
     return {
       accessToken: tokenData.accessToken,
