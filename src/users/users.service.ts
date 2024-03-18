@@ -12,7 +12,7 @@ import {DatabaseError} from "~/common/exceptions/DatabaseError";
 import {FindOptionsWhere} from "typeorm/find-options/FindOptionsWhere";
 import {FindManyOptions} from "typeorm/find-options/FindManyOptions";
 import {Profile} from "@user/profiles.entity";
-import {AdminUpdateUserDto} from "@user/dto/edit-user.dto";
+import {AdminUpdateUserBodyDto} from "@user/dto/edit-user.dto";
 
 @Injectable()
 export class UsersService {
@@ -48,25 +48,21 @@ export class UsersService {
     });
   }
 
-  async create(userDto: Partial<CreateUserDto>): Promise<UserEntity | undefined> {
+  public async create(userDto: Partial<CreateUserDto>): Promise<UserEntity> {
     const user: UserEntity = await this.userRepository.create({
       ...userDto,
-      lastActiveAt: new Date()
+      lastActiveAt: new Date(),
+      profile: {}
     });
-    const profile = await this.userProfileRepository.create({
-      user
-    })
 
-    try {
-      await this.userRepository.save(user);
-      await this.userProfileRepository.save(profile);
-      return user;
-    } catch (error) {
-      throw new DatabaseError(error.message);
-    }
+    return await this.userRepository.save(user).catch(err => {
+      throw new DatabaseError(err.message);
+    });
   }
 
-  public async updateUser(id: string, data: AdminUpdateUserDto) {
+
+  //TODO: Fix argument types
+  public async updateUser(id: string, data: AdminUpdateUserBodyDto | Partial<UserEntity>) {
     const toUpdate = await this.userRepository.findOneBy({ id });
     const updated: UserEntity = Object.assign(toUpdate, data);
 
