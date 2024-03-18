@@ -1,7 +1,17 @@
-import {Body, Controller, Delete, Get, Param, Put, Req, UseGuards, UseInterceptors, UsePipes, HttpStatus, Patch} from '@nestjs/common';
-import {ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiOkResponse} from '@nestjs/swagger';
-import {AdminUpdateUserDto, UpdateUserDto} from '@user/dto/edit-user.dto';
-import { UserResponseDto } from '@user/dto/user-response.dto';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Req,
+  UseGuards,
+  UseInterceptors,
+  Patch,
+  NotFoundException
+} from '@nestjs/common';
+import {ApiBearerAuth, ApiTags, ApiUnauthorizedResponse} from '@nestjs/swagger';
+import {AdminUpdateUserBodyDto, UpdateUserBodyDto} from '@user/dto/edit-user.dto';
 import { Request } from 'express';
 
 import {RolesEnum, UserEntity} from '@user/users.entity';
@@ -10,106 +20,76 @@ import { UsersService } from './users.service';
 import {RolesGuard} from "~/common/guards/roles.guard";
 import {JwtAuthGuard} from "~/common/guards/jwt-auth.guard";
 import {TransformInterceptor} from "~/common/interceptors/TransformInterceptor";
-import {BadRequestException} from "~/common/exceptions/bad-request";
 import {Roles} from "~/common/decorators/roles";
-import {UserDto} from "@user/dto/user.dto";
+import {UserResponseDto} from "@user/dto/user.dto";
+import {UnauthorizedResponseDto} from "~/common/dto/response-exception.dto";
+import {ApiGetAllUsersDocs, ApiGetCurrentUsersDocs} from "@user/api-docs/api-get-users.docs";
+import {ApiDeleteUsersDocs} from "@user/api-docs/api-delete-users.docs";
+import {ApiAdminUpdateUserDocs, ApiUpdateUserDocs} from "@user/api-docs/api-update-user.docs";
 
 @ApiTags('users')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
+@ApiUnauthorizedResponse({
+  description: `Returns if user not authorized.`,
+  type: UnauthorizedResponseDto
+})
 @Controller('/users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @ApiOperation({
-    operationId: 'Receive all users',
-    summary: 'Receive all users of app',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Returns all users',
-  })
+  @ApiGetAllUsersDocs()
   @Roles(RolesEnum.ADMIN)
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
-  getAllUsers(): Promise<UserEntity[]> {
+  public getAllUsers(): Promise<UserEntity[]> {
     return this.usersService.findAll({});
   }
 
   @Get('/current')
-  @Roles(RolesEnum.USER, RolesEnum.ADMIN)
-  @ApiParam({ name: 'id', required: true, description: 'ID of the user' })
-  @ApiOkResponse({
-    description: 'Return current authorized user.',
-    type: UserDto
-  })
+  @ApiGetCurrentUsersDocs()
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
-  async profile(@Req() req: Request): Promise<any> {
+  public async profile(@Req() req: Request): Promise<UserEntity> {
     const { user } = req;
     return user;
   }
 
   @Delete(':id')
-  @ApiParam({ name: 'id', required: true, description: 'ID of the user' })
+  @ApiDeleteUsersDocs()
   @Roles(RolesEnum.ADMIN)
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
-  async removeUser(@Param() { id }: { id: string }, @Req() req: Request): Promise<UserEntity> {
+  public async removeUser(@Param() { id }: { id: string }, @Req() req: Request): Promise<UserEntity> {
     const { user } = req;
     return this.usersService.deleteUser(id, user.id);
   }
 
 
   @Patch('/:id')
-  @ApiParam({ name: 'id', required: true, description: 'ID of the user' })
-  @ApiOperation({
-    operationId: 'Edit user by id',
-    summary: 'Receive id of user with payload and edit him.',
-    description: 'Receive id of user with payload for edit, check exist user if not return exception, if ok find user by id and edit him.'
-  })
-  @ApiOkResponse({
-    description: 'Return edited user',
-    type: UserEntity,
-  })
-  @ApiBody({
-    type: UpdateUserDto,
-  })
+  @ApiUpdateUserDocs()
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
-  async editUser(
+  public async editUser(
     @Param() { id }: { id: string },
-    @Body() body: UpdateUserDto
+    @Body() body: UpdateUserBodyDto
   ): Promise<UserEntity> {
     const updatingUser = await this.usersService.findOne({id});
     if (!updatingUser) {
-      throw new BadRequestException(`User doesn't exist`);
+      throw new NotFoundException(`User with id: ${id}, doesn't exist.`);
     }
 
     return this.usersService.updateUser(id, body);
   }
 
   @Patch('/admin/:id')
-  @ApiParam({ name: 'id', required: true, description: 'ID of the user' })
-  @ApiOperation({
-    operationId: 'Edit user by id',
-    summary: 'Receive id of user with payload and edit him.',
-    description: 'Receive id of user with payload for edit, check exist user if not return exception, if ok find user by id and edit him.'
-  })
-  @ApiOkResponse({
-    description: 'Return edited user',
-    type: UserEntity,
-  })
-  @ApiBody({
-    type: AdminUpdateUserDto,
-  })
+  @ApiAdminUpdateUserDocs()
   @Roles(RolesEnum.ADMIN)
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
-  async adminEditUser(
+  public async adminEditUser(
     @Param() { id }: { id: string },
-    @Body() body: AdminUpdateUserDto
+    @Body() body: AdminUpdateUserBodyDto
   ): Promise<UserEntity> {
     const updatingUser = await this.usersService.findOne({id});
     if (!updatingUser) {
-      throw new BadRequestException(`User doesn't exist`);
+      throw new NotFoundException(`User with id: ${id}, doesn't exist.`);
     }
 
     // Here may be any method for any update user by admin
