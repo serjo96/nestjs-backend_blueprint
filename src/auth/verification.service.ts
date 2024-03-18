@@ -28,17 +28,9 @@ export class VerificationService {
     private readonly configService: ConfigService,
 
     @Inject(forwardRef(() => EmailService))
-    private emailService: EmailService,
-    private encryptionService: EncryptionService,
+    private readonly emailService: EmailService,
+    private readonly encryptionService: EncryptionService,
   ) {}
-
-  public findOneBy(
-    where: FindOptionsWhere<EmailVerificationEntity>
-  ): Promise<EmailVerificationEntity | null> {
-    return this.emailVerificationRepository.findOneBy(where).catch(err => {
-      throw new DatabaseError(err.message);
-    });
-  }
 
   public deleteEmailVerification(where: GetRepositoryMethodsArgs<EmailVerificationEntity, 'delete'>[0]) {
     return this.emailVerificationRepository.delete(where);
