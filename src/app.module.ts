@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import {ThrottlerModule} from "@nestjs/throttler";
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from 'nestjs-pino';
@@ -11,6 +12,7 @@ import pinoLoggerConfig from "~/config/pino-logger.config";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import {ConfigEnum, mainConfig} from "~/config/main-config";
 import {validationSchema} from "~/config/validation";
+import {isProd} from "~/utils/envType";
 
 @Module({
   imports: [
@@ -31,7 +33,15 @@ import {validationSchema} from "~/config/validation";
     LoggerModule.forRootAsync({
       useFactory: async () => pinoLoggerConfig
     }),
-  ],
+    ...!isProd
+      ? [
+    ThrottlerModule.forRoot({
+      throttlers: [{
+        ttl: 60, // time in seconds for which the limit is calculated
+        limit: 10, // maximum number of requests during TTL
+      }]
+    }),
+  ] : []],
   controllers: [AppController],
   providers: [AppService],
 })
