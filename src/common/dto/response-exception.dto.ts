@@ -1,6 +1,5 @@
 import {IsNumber, IsString} from "class-validator";
 import {ApiProperty} from "@nestjs/swagger";
-import {HttpStatus} from "@nestjs/common";
 
 class ResponseExceptionDto {
   @IsString()

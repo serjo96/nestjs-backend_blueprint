@@ -36,7 +36,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       status:  HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal Server Error'
     }
-    let errorPayload: ErrorPayload = {
+     const errorPayload: ErrorPayload = {
         requestPayload: request.body || request.query,
         exceptionPayload: null
     };
