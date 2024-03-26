@@ -101,7 +101,7 @@ export class UsersController {
 
   @Get('/profile/:id')
   @ApiGetProfileDocs()
-  @UseInterceptors(new TransformInterceptor(ProfileDto))
+  @UseInterceptors(new TransformInterceptor(ProfileResponseDto))
   public async getUserProfile(@Param() { id }: { id: string }): Promise<ProfileResponseDto> {
     return this.usersService.getUserProfile(id);
   }
