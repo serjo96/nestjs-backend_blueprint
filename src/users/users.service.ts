@@ -71,6 +71,16 @@ export class UsersService {
     });
   }
 
+  public getUserProfile(userId: string) {
+    return this.userProfileRepository.findOne({
+      where: {
+        user: {id: userId}
+      }
+    }).catch(err => {
+      throw new DatabaseError(err.message);
+    })
+  }
+
   public updateUserFiled(id: string, payload: Partial<UserEntity>) {
     return this.userRepository.update(id, payload).catch(err => {
       throw new DatabaseError(err.message);

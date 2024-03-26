@@ -17,7 +17,7 @@ export class UpdateUserBodyDto extends PartialType(UserBodyParams) {
   @IsOptional()
   @ValidateNested()
   @Type(() => ProfileDto)
-  public profile: ProfileDto;
+  public profile?: ProfileDto;
 
 }
 export class AdminUpdateUserBodyDto extends UpdateUserBodyDto {

@@ -26,6 +26,8 @@ import {UnauthorizedResponseDto} from "~/common/dto/response-exception.dto";
 import {ApiGetAllUsersDocs, ApiGetCurrentUsersDocs} from "@user/api-docs/api-get-users.docs";
 import {ApiDeleteUsersDocs} from "@user/api-docs/api-delete-users.docs";
 import {ApiAdminUpdateUserDocs, ApiUpdateUserDocs} from "@user/api-docs/api-update-user.docs";
+import {ApiGetProfileDocs} from "@user/api-docs/api-get-profile.docs";
+import {ProfileDto, ProfileResponseDto} from "@user/dto/profile.dto";
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -49,7 +51,7 @@ export class UsersController {
   @Get('/current')
   @ApiGetCurrentUsersDocs()
   @UseInterceptors(new TransformInterceptor(UserResponseDto))
-  public async profile(@Req() req: Request): Promise<UserEntity> {
+  public async getCurrentUser(@Req() req: Request): Promise<UserEntity> {
     const { user } = req;
     return this.usersService.findOne({id: user.userId});
   }
@@ -94,5 +96,13 @@ export class UsersController {
 
     // Here may be any method for any update user by admin
     return this.usersService.updateUser(id, body);
+  }
+
+
+  @Get('/profile/:id')
+  @ApiGetProfileDocs()
+  @UseInterceptors(new TransformInterceptor(ProfileDto))
+  public async getUserProfile(@Param() { id }: { id: string }): Promise<ProfileResponseDto> {
+    return this.usersService.getUserProfile(id);
   }
 }
